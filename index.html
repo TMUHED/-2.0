@@ -29,6 +29,10 @@
         .SD-shift { background-color: #dbeafe; color: #1e40af; } 
         .SN-shift { background-color: #4338ca; color: #e0e7ff; } 
         .unassigned-shift { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
+        .designated-shift-marker { 
+            color: #c026d3; 
+            font-weight: bold;
+        }
         .unassigned-reason-icon {
             display: inline-block;
             width: 14px;
@@ -64,69 +68,43 @@
             color: black; text-decoration: none; cursor: pointer;
         }
 
-        #miniCalendarContainer {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            text-align: center;
+        #miniCalendarContainer, #designatedCalendarContainer { 
+            display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center;
         }
-        .calendar-header {
-            grid-column: span 7;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+        .calendar-header{grid-column:span 7; text-align:center; font-weight:bold; margin-bottom:10px; font-size:1.1em;}
+        .calendar-day-name{font-size:0.8em; color:#6b7280; padding-bottom:5px;}
+        .calendar-day{padding:8px 4px; border:1px solid #e5e7eb; border-radius:4px; cursor:pointer; font-size:0.9em; position:relative;}
+        .calendar-day:hover{background:#f0f0f0;}
+        .calendar-day.empty{background:#f9fafb; cursor:default;}
+        .calendar-day.selected{background:#3b82f6; color:white;} 
+        .calendar-day.is-weekend{background:#f3f4f6;}
+        .calendar-day.is-national-holiday{background:#fef9c3;}
+        .calendar-day.is-weekend.is-national-holiday{background:#fef9c3;}
+        .calendar-day.selected.is-national-holiday{background:#3b82f6; color:white;} 
+        .calendar-day .shift-indicator{ 
+            position:absolute; 
+            bottom:1px; 
+            right:2px; 
+            font-size:0.75em; 
+            font-weight:bold;
+            padding: 1px 3px;
+            border-radius: 3px;
+            line-height: 1; 
         }
-        .calendar-day-name {
-            font-size: 0.8em;
-            color: #6b7280; 
-            padding-bottom: 5px;
-        }
-        .calendar-day {
-            padding: 8px 4px;
-            border: 1px solid #e5e7eb; 
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        .calendar-day:hover { background-color: #f0f0f0; } 
-        .calendar-day.empty { background-color: #f9fafb; cursor: default; }
-        .calendar-day.selected { background-color: #3b82f6; color: white; }
-        .calendar-day.is-weekend { background-color: #f3f4f6; } 
-        .calendar-day.is-national-holiday { background-color: #fef9c3; } 
-        .calendar-day.is-weekend.is-national-holiday { background-color: #fef9c3; }
-        .calendar-day.selected.is-national-holiday { background-color: #3b82f6; color: white; } 
 
-        .doctor-swap-dropdown {
-            position: absolute;
-            background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1001; 
-            max-height: 200px;
-            overflow-y: auto;
-            border-radius: 4px;
+
+        .doctor-swap-dropdown, #designatedShiftTypeSelector { 
+            position:absolute; background:#fff; border:1px solid #ccc; box-shadow:0 2px 10px rgba(0,0,0,0.1); z-index:1005; max-height:200px; overflow-y:auto; border-radius:4px;
         }
-        .doctor-swap-dropdown div {
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 0.9em;
+        .doctor-swap-dropdown div, #designatedShiftTypeSelector div {
+            padding:8px 12px; cursor:pointer; font-size:0.9em;
         }
-        .doctor-swap-dropdown div:hover {
-            background-color: #f0f0f0;
+        .doctor-swap-dropdown div:hover, #designatedShiftTypeSelector div:hover {
+            background:#f0f0f0;
         }
-        #unassignedReasonModal .modal-content {
-            max-width: 500px; 
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        #unassignedReasonList li {
-            padding: 4px 0;
-            border-bottom: 1px dashed #eee;
-        }
-        #unassignedReasonList li:last-child {
-            border-bottom: none;
-        }
+        #unassignedReasonModal .modal-content{max-width:500px; max-height:70vh; overflow-y:auto;}
+        #unassignedReasonList li{padding:4px 0; border-bottom:1px dashed #eee;}
+        #unassignedReasonList li:last-child{border:none;}
 
     </style>
 </head>
@@ -224,13 +202,21 @@
                     <label for="doctorMaxTotalShiftsInput" class="block text-sm font-medium text-gray-700">總班數上限:</label>
                     <input type="number" id="doctorMaxTotalShiftsInput" placeholder="無" min="0" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
+                <div>
+                    <label for="doctorMinConsecutiveInput" class="block text-sm font-medium text-gray-700">連續上班下限:</label>
+                    <input type="number" id="doctorMinConsecutiveInput" placeholder="無 (預設2)" min="0" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="doctorMaxConsecutiveInput" class="block text-sm font-medium text-gray-700">連續上班上限:</label>
+                    <input type="number" id="doctorMaxConsecutiveInput" placeholder="無 (預設3)" min="0" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
                  <div>
                     <label class="flex items-center mt-3">
                         <input type="checkbox" id="doctorPreviousMonthNightShiftInput" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                         <span class="ml-2 text-sm text-gray-600">上個月最後一天為夜班</span>
                     </label>
                 </div>
-                </div>
+            </div>
             
             <p class="text-sm font-medium text-gray-700 mb-1 mt-4">各班型上下限 (留空表示無限制):</p>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 mb-3">
@@ -301,6 +287,11 @@
                     </div>
                 </div>
             </div>
+             <div class="mb-3">
+                <button type="button" id="openDesignatedShiftModalBtn" class="text-sm bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-md shadow-sm">設定指定班別</button>
+                <p id="designatedShiftsSummary" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+
 
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700">預休日期 (點選下方日曆):</label>
@@ -311,6 +302,23 @@
             <button id="saveDoctorBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-md shadow">儲存醫師資料</button>
         </div>
     </div>
+
+    <div id="designatedShiftModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeDesignatedShiftModal()">&times;</span>
+            <h3 id="designatedShiftModalTitle" class="text-xl font-semibold mb-4">設定指定班別</h3>
+            <div id="designatedCalendarContainer" class="mb-4">
+                </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md" onclick="closeDesignatedShiftModal()">取消</button>
+                <button type="button" id="saveDesignatedShiftsBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md">儲存指定</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="designatedShiftTypeSelector" class="doctor-swap-dropdown" style="display: none;">
+        </div>
+
 
     <div id="unassignedReasonModal" class="modal">
         <div class="modal-content">
@@ -332,9 +340,9 @@
             'SN': { name: 'SN班 (ICU)', time: '19:00-07:00', required: 1, isNight: true, isICU: true, cssClass: 'SN-shift' }
         };
         const SHIFT_KEYS = Object.keys(SHIFT_DEFINITIONS);
-        const LOCAL_STORAGE_KEY = 'erSchedulerDoctorSettings_v4'; 
-        const IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS = 4; // Implicit hard max
-        const IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS = 2; // Soft target for continuity
+        const LOCAL_STORAGE_KEY = 'erSchedulerDoctorSettings_v5'; 
+        const IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT = 3; 
+        const IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT = 2; 
         
         const TAIWAN_NATIONAL_HOLIDAYS = { 
             2025: [
@@ -347,6 +355,8 @@
         let doctors = []; 
         let doctorIdCounter = 0;
         let currentEditingDoctorDaysOff = []; 
+        let currentEditingDoctorDesignatedShifts = []; 
+        let currentDoctorIdForDesignatedShifts = null;
         let generatedScheduleData = null; 
         let unassignedSlotReasons = {}; 
 
@@ -380,6 +390,8 @@
             document.getElementById('doctorCannotWorkNightsInput').addEventListener('change', handlePreferenceChange);
             document.getElementById('doctorCannotWorkSDInput').addEventListener('change', handlePreferenceChange);
             document.getElementById('doctorOnlySDInput').addEventListener('change', handlePreferenceChange);
+            document.getElementById('openDesignatedShiftModalBtn').addEventListener('click', openDesignatedShiftModal);
+            document.getElementById('saveDesignatedShiftsBtn').addEventListener('click', saveDesignatedShiftsFromModal);
         }
 
 
@@ -417,7 +429,7 @@
 
             const defaultConstraints = { 
                 minTotalShifts: null, maxTotalShifts: null, 
-                maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Use global constant
+                minConsecutiveWorkDays: null, maxConsecutiveWorkDays: null, 
                 minD: null, maxD: null, 
                 minN: null, maxN: null, 
                 minK: null, maxK: null, 
@@ -425,7 +437,7 @@
                 minSN: null, maxSN: null, 
                 minWeekendShifts: null, maxWeekendShifts: null
             };
-            const defaultPreferences = { previousMonthNightShift: false, cannotWorkNights: false, onlySD: false, cannotWorkSD: false }; 
+            const defaultPreferences = { previousMonthNightShift: false, cannotWorkNights: false, onlySD: false, cannotWorkSD: false, designatedShifts: [] }; 
             const defaultDaysOff = ""; 
 
             initialDoctorNames.forEach(name => {
@@ -453,7 +465,7 @@
                     doctors = parsedSettings.map(docData => {
                         const baseConstraints = { 
                             minTotalShifts: null, maxTotalShifts: null, 
-                            maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, 
+                            minConsecutiveWorkDays: null, maxConsecutiveWorkDays: null, 
                             minD: null, maxD: null, minN: null, maxN: null, minK: null, maxK: null, 
                             minSD: null, maxSD: null, minSN: null, maxSN: null, 
                             minWeekendShifts: null, maxWeekendShifts: null
@@ -461,7 +473,8 @@
                         const constraints = {
                             minTotalShifts: docData.constraints?.minTotalShifts !== undefined ? docData.constraints.minTotalShifts : baseConstraints.minTotalShifts,
                             maxTotalShifts: docData.constraints?.maxTotalShifts !== undefined ? docData.constraints.maxTotalShifts : baseConstraints.maxTotalShifts,
-                            maxConsecutiveWorkDays: docData.constraints?.maxConsecutiveWorkDays === undefined ? baseConstraints.maxConsecutiveWorkDays : docData.constraints.maxConsecutiveWorkDays,
+                            minConsecutiveWorkDays: docData.constraints?.minConsecutiveWorkDays !== undefined ? docData.constraints.minConsecutiveWorkDays : baseConstraints.minConsecutiveWorkDays,
+                            maxConsecutiveWorkDays: docData.constraints?.maxConsecutiveWorkDays !== undefined ? docData.constraints.maxConsecutiveWorkDays : baseConstraints.maxConsecutiveWorkDays,
                             minShiftsPerType: {},
                             maxShiftsPerType: {},
                             minWeekendShifts: docData.constraints?.minWeekendShifts !== undefined ? docData.constraints.minWeekendShifts : baseConstraints.minWeekendShifts,
@@ -471,18 +484,14 @@
                             constraints.minShiftsPerType[sk] = docData.constraints?.minShiftsPerType?.[sk] !== undefined ? docData.constraints.minShiftsPerType[sk] : baseConstraints[`min${sk}`]; 
                             constraints.maxShiftsPerType[sk] = docData.constraints?.maxShiftsPerType?.[sk] !== undefined ? docData.constraints.maxShiftsPerType[sk] : baseConstraints[`max${sk}`];
                         });
-                        // Ensure maxConsecutiveWorkDays is using the global constant if loaded as null/999 from older versions
-                        if (constraints.maxConsecutiveWorkDays === null || constraints.maxConsecutiveWorkDays === 999) {
-                            constraints.maxConsecutiveWorkDays = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS;
-                        }
-
-
-                         const basePreferences = { previousMonthNightShift: false, cannotWorkNights: false, cannotWorkShiftTypes: [], onlyWorksShiftTypes: [] };
+                        
+                         const basePreferences = { previousMonthNightShift: false, cannotWorkNights: false, cannotWorkShiftTypes: [], onlyWorksShiftTypes: [], designatedShifts: [] };
                         const preferences = {
                             previousMonthNightShift: docData.preferences?.previousMonthNightShift || basePreferences.previousMonthNightShift,
                             cannotWorkNights: docData.preferences?.cannotWorkNights || basePreferences.cannotWorkNights, 
                             cannotWorkShiftTypes: docData.preferences?.cannotWorkShiftTypes || basePreferences.cannotWorkShiftTypes, 
-                            onlyWorksShiftTypes: docData.preferences?.onlyWorksShiftTypes || basePreferences.onlyWorksShiftTypes
+                            onlyWorksShiftTypes: docData.preferences?.onlyWorksShiftTypes || basePreferences.onlyWorksShiftTypes,
+                            designatedShifts: Array.isArray(docData.preferences?.designatedShifts) ? docData.preferences.designatedShifts : []
                         };
                         const daysOffArray = Array.isArray(docData.daysOff) ? docData.daysOff : (docData.daysOff ? String(docData.daysOff).split(',').map(d => d.trim()).filter(d => d) : []);
 
@@ -541,12 +550,10 @@
             SHIFT_KEYS.forEach(sk => {
                 shiftInputs[`min${sk}`] = document.getElementById(`doctorMin${sk}Input`);
                 shiftInputs[`max${sk}`] = document.getElementById(`doctorMax${sk}Input`);
-                // Ensure dataset.originalValue is set if not already
                 if (shiftInputs[`min${sk}`] && shiftInputs[`min${sk}`].dataset.originalValue === undefined) shiftInputs[`min${sk}`].dataset.originalValue = shiftInputs[`min${sk}`].value || "";
                 if (shiftInputs[`max${sk}`] && shiftInputs[`max${sk}`].dataset.originalValue === undefined) shiftInputs[`max${sk}`].dataset.originalValue = shiftInputs[`max${sk}`].value || "";
             });
             
-            // Restore all to original dataset values before applying new logic
             for (const inputKey in shiftInputs) {
                 const inputElement = shiftInputs[inputKey];
                 if (inputElement) {
@@ -592,9 +599,14 @@
             
             document.getElementById('doctorMinTotalShiftsInput').value = ""; 
             document.getElementById('doctorMaxTotalShiftsInput').value = "";  
-            document.getElementById('doctorMaxConsecutiveInput').value = ""; // Default to blank, system uses IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS
+            document.getElementById('doctorMinConsecutiveInput').value = ""; 
+            document.getElementById('doctorMaxConsecutiveInput').value = ""; 
             document.getElementById('doctorPreviousMonthNightShiftInput').checked = false;
             
+            currentEditingDoctorDesignatedShifts = []; 
+            updateDesignatedShiftsSummary([]);
+
+
             SHIFT_KEYS.forEach(sk => {
                 const minInput = document.getElementById(`doctorMin${sk}Input`);
                 const maxInput = document.getElementById(`doctorMax${sk}Input`);
@@ -627,6 +639,7 @@
         function openDoctorModalForEdit(doctorId) {
             const doctor = doctors.find(d => d.id === doctorId);
             if (!doctor) return;
+            currentDoctorIdForDesignatedShifts = doctorId; 
 
             document.getElementById('modalTitle').textContent = '編輯醫師資料';
             document.getElementById('doctorIdInput').value = doctor.id;
@@ -634,9 +647,13 @@
             
             document.getElementById('doctorMinTotalShiftsInput').value = doctor.constraints.minTotalShifts === null ? "" : doctor.constraints.minTotalShifts;
             document.getElementById('doctorMaxTotalShiftsInput').value = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? "" : doctor.constraints.maxTotalShifts;
-            // Max consecutive is now a global rule, so the input is removed. If it were to be re-added:
-            // document.getElementById('doctorMaxConsecutiveInput').value = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? "" : doctor.constraints.maxConsecutiveWorkDays;
+            document.getElementById('doctorMinConsecutiveInput').value = doctor.constraints.minConsecutiveWorkDays === null || doctor.constraints.minConsecutiveWorkDays === IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT ? "" : doctor.constraints.minConsecutiveWorkDays;
+            document.getElementById('doctorMaxConsecutiveInput').value = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT || doctor.constraints.maxConsecutiveWorkDays === null ? "" : doctor.constraints.maxConsecutiveWorkDays;
             document.getElementById('doctorPreviousMonthNightShiftInput').checked = doctor.preferences.previousMonthNightShift;
+            
+            currentEditingDoctorDesignatedShifts = JSON.parse(JSON.stringify(doctor.preferences.designatedShifts || [])); 
+            updateDesignatedShiftsSummary(currentEditingDoctorDesignatedShifts);
+
             
             SHIFT_KEYS.forEach(st => {
                 const minInput = document.getElementById(`doctorMin${st}Input`);
@@ -671,19 +688,31 @@
         function closeDoctorModal() {
             document.getElementById('doctorModal').style.display = 'none';
             document.getElementById('miniCalendarContainer').innerHTML = ''; 
+            currentDoctorIdForDesignatedShifts = null; 
+            currentEditingDoctorDesignatedShifts = [];
         }
          function closeUnassignedReasonModal() {
             document.getElementById('unassignedReasonModal').style.display = 'none';
         }
+        function closeDesignatedShiftModal() {
+            document.getElementById('designatedShiftModal').style.display = 'none';
+            document.getElementById('designatedCalendarContainer').innerHTML = '';
+            closeShiftTypeSelector(); 
+        }
+
 
         window.onclick = function(event) { 
             const doctorModal = document.getElementById('doctorModal');
             const reasonModal = document.getElementById('unassignedReasonModal');
-            if (event.target == doctorModal) {
-                closeDoctorModal();
-            }
-            if (event.target == reasonModal) {
-                closeUnassignedReasonModal();
+            const designatedShiftModal = document.getElementById('designatedShiftModal');
+            const shiftSelector = document.getElementById('designatedShiftTypeSelector');
+
+            if (event.target == doctorModal) closeDoctorModal();
+            if (event.target == reasonModal) closeUnassignedReasonModal();
+            if (event.target == designatedShiftModal) closeDesignatedShiftModal();
+            
+            if (shiftSelector.style.display === 'block' && !shiftSelector.contains(event.target) && !event.target.classList.contains('calendar-day')) {
+                closeShiftTypeSelector();
             }
         }
         
@@ -691,6 +720,61 @@
             if (value === "" || value === null || value === undefined) return null; 
             const parsed = parseInt(value);
             return (isNaN(parsed) || parsed < 0) ? defaultIfInvalid : parsed;
+        }
+
+        function validateDoctorDesignations(doctor) {
+            const errors = [];
+            const year = parseInt(document.getElementById('year-select').value);
+            const month = parseInt(document.getElementById('month-select').value);
+
+            const sortedDesignations = [...(doctor.preferences.designatedShifts || [])].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            for (let i = 0; i < sortedDesignations.length; i++) {
+                const currentDes = sortedDesignations[i];
+                const currentDateObj = new Date(currentDes.date + "T00:00:00"); // Ensure correct date parsing
+                const currentDayOfMonth = currentDateObj.getDate(); // Use getDate() for day of month
+                const currentShiftInfo = SHIFT_DEFINITIONS[currentDes.shift];
+
+                // Check against days off
+                if (doctor.daysOff.includes(currentDes.date)) {
+                    errors.push(`${currentDes.date} ${currentDes.shift}班 與預休衝突。`);
+                }
+
+                // Check N/SN before day off
+                if (currentShiftInfo.isNight) {
+                    const tomorrow = new Date(currentDateObj);
+                    tomorrow.setDate(currentDateObj.getDate() + 1);
+                    const tomorrowStr = formatDate(tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate());
+                    if (doctor.daysOff.includes(tomorrowStr)) {
+                        errors.push(`${currentDes.date} ${currentDes.shift}班 後隔天(${tomorrowStr})預休，不允許。`);
+                    }
+                }
+                
+                // Check previous month night shift conflict with day 1 white shift
+                if (currentDayOfMonth === 1 && doctor.preferences.previousMonthNightShift && !currentShiftInfo.isNight) {
+                     errors.push(`本月1日 ${currentDes.shift}班 與上月最後一天夜班設定衝突。`);
+                }
+
+
+                // Check against next designated shift for N->D or K->D
+                if (i + 1 < sortedDesignations.length) {
+                    const nextDes = sortedDesignations[i+1];
+                    const nextDateObj = new Date(nextDes.date + "T00:00:00");
+                    
+                    const dayDiff = (nextDateObj - currentDateObj) / (1000 * 60 * 60 * 24);
+
+                    if (dayDiff === 1) { // If the next designated shift is the very next day
+                        const nextShiftInfo = SHIFT_DEFINITIONS[nextDes.shift];
+                        if (currentShiftInfo.isNight && !nextShiftInfo.isNight) {
+                            errors.push(`指定班衝突: ${currentDes.date} ${currentDes.shift}班 (夜) 後接 ${nextDes.date} ${nextDes.shift}班 (白)。`);
+                        }
+                        if (currentDes.shift === 'K' && nextDes.shift === 'D') {
+                            errors.push(`指定班衝突: ${currentDes.date} K班 後接 ${nextDes.date} D班。`);
+                        }
+                    }
+                }
+            }
+            return errors;
         }
 
 
@@ -743,7 +827,8 @@
                 constraints: {
                     minTotalShifts: minTotalShiftsValue,
                     maxTotalShifts: maxTotalShiftsValue, 
-                    maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Use global constant
+                    minConsecutiveWorkDays: parseInputAsIntOrNull(constraintsData.minConsecutiveWorkDays, IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT),
+                    maxConsecutiveWorkDays: parseInputAsIntOrNull(constraintsData.maxConsecutiveWorkDays, IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT), 
                     minShiftsPerType: finalMinShiftsPerType,
                     maxShiftsPerType: finalMaxShiftsPerType,
                     minWeekendShifts: parseInputAsIntOrNull(constraintsData.minWeekendShifts),
@@ -754,7 +839,8 @@
                     cannotWorkNights: preferencesData.cannotWorkNights || false, 
                     cannotWorkShiftTypes: cannotWorkShiftTypesInternal, 
                     onlyWorksShiftTypes: onlyWorksShiftTypesInternal, 
-                    rawCannotWorkSDCheckbox: preferencesData.cannotWorkSD || false 
+                    rawCannotWorkSDCheckbox: preferencesData.cannotWorkSD || false,
+                    designatedShifts: preferencesData.designatedShifts || []
                 },
                 daysOff: daysOffArray, 
                 currentShifts: 0,
@@ -776,7 +862,8 @@
             const constraintsData = {
                 minTotalShifts: document.getElementById('doctorMinTotalShiftsInput').value,
                 maxTotalShifts: document.getElementById('doctorMaxTotalShiftsInput').value,
-                maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Not from input anymore
+                minConsecutiveWorkDays: document.getElementById('doctorMinConsecutiveInput').value,
+                maxConsecutiveWorkDays: document.getElementById('doctorMaxConsecutiveInput').value, 
                 minWeekendShifts: document.getElementById('doctorMinWeekendInput').value,
                 maxWeekendShifts: document.getElementById('doctorMaxWeekendInput').value,
             };
@@ -790,8 +877,17 @@
                 cannotWorkNights: document.getElementById('doctorCannotWorkNightsInput').checked, 
                 cannotWorkSD: document.getElementById('doctorCannotWorkSDInput').checked, 
                 onlySD: document.getElementById('doctorOnlySDInput').checked,
+                designatedShifts: [...currentEditingDoctorDesignatedShifts] 
             };
             const daysOffDataString = currentEditingDoctorDaysOff.join(','); 
+
+            const tempDoctorForValidation = createDoctorObject(name, constraintsData, preferencesData, daysOffDataString, id || 'temp');
+            const validationErrors = validateDoctorDesignations(tempDoctorForValidation);
+            if (validationErrors.length > 0) {
+                alert("儲存失敗，指定班別與限制衝突：\n" + validationErrors.join("\n"));
+                return;
+            }
+
 
             if (id) { 
                 const doctorIndex = doctors.findIndex(d => d.id === id);
@@ -836,20 +932,30 @@
                 }
 
                 if(doctor.preferences.onlyWorksShiftTypes.includes('SD')) preferencesText.push('僅SD班');
+                if(doctor.preferences.designatedShifts && doctor.preferences.designatedShifts.length > 0) {
+                    const designatedSummary = doctor.preferences.designatedShifts.map(ds => {
+                         const dateParts = ds.date.split('-');
+                         return `${dateParts[1]}${dateParts[2]}${ds.shift}`;
+                    }).join('/');
+                    preferencesText.push(`指定: ${designatedSummary}`);
+                }
+
 
                 const minTotal = doctor.constraints.minTotalShifts === null ? '-' : doctor.constraints.minTotalShifts;
                 const maxTotal = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? '無上限' : doctor.constraints.maxTotalShifts;
                 const minWeekend = doctor.constraints.minWeekendShifts === null ? '-' : doctor.constraints.minWeekendShifts;
                 const maxWeekend = doctor.constraints.maxWeekendShifts === 999 || doctor.constraints.maxWeekendShifts === null ? '無上限' : doctor.constraints.maxWeekendShifts;
-                // const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '無' : doctor.constraints.maxConsecutiveWorkDays;
+                const minConsecutive = doctor.constraints.minConsecutiveWorkDays === null ? '-' : doctor.constraints.minConsecutiveWorkDays;
+                const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '無上限' : doctor.constraints.maxConsecutiveWorkDays;
 
 
                 div.innerHTML = `
                     <div>
                         <strong class="text-md text-blue-600">${doctor.name}</strong>
                         <p class="text-xs text-gray-500">
-                            總班: ${minTotal} - ${maxTotal}, 
-                            假日/節慶: ${minWeekend} - ${maxWeekend} <br/>
+                            總班: ${minTotal}-${maxTotal}, 
+                            連上: ${minConsecutive}-${maxConsecutive}, 
+                            假日/節慶: ${minWeekend}-${maxWeekend} <br/>
                             偏好: ${preferencesText.join(', ') || '無'}
                             休假: ${daysOffDisplay}
                         </p>
@@ -941,7 +1047,206 @@
         }
 
 
-        // --- Scheduling Core Logic ---
+        // --- Designated Shift Modal & Calendar ---
+        function openDesignatedShiftModal() {
+            const doctorId = document.getElementById('doctorIdInput').value;
+            if (!doctorId) {
+                // For a new doctor not yet saved, use the temporary array
+                // currentEditingDoctorDesignatedShifts should be initialized in openDoctorModalForAdd
+            } else {
+                 const doctor = doctors.find(d => d.id === doctorId);
+                 currentEditingDoctorDesignatedShifts = doctor ? JSON.parse(JSON.stringify(doctor.preferences.designatedShifts || [])) : [];
+                 currentDoctorIdForDesignatedShifts = doctorId; 
+            }
+
+
+            const scheduleYear = parseInt(document.getElementById('year-select').value);
+            const scheduleMonth = parseInt(document.getElementById('month-select').value);
+            renderDesignatedShiftCalendar('designatedCalendarContainer', scheduleYear, scheduleMonth, currentEditingDoctorDesignatedShifts);
+            document.getElementById('designatedShiftModal').style.display = 'block';
+        }
+
+        function renderDesignatedShiftCalendar(containerId, year, month, designatedShiftsArray) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; 
+
+            const daysInMonth = getDaysInMonth(year, month);
+            const firstDayOfMonth = new Date(year, month - 1, 1).getDay(); 
+            const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+            const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+            const header = document.createElement('div');
+            header.className = 'calendar-header';
+            header.textContent = `${year}年 ${monthNames[month - 1]} - 指定班別`;
+            container.appendChild(header);
+
+            dayNames.forEach(name => {
+                const dayNameCell = document.createElement('div');
+                dayNameCell.className = 'calendar-day-name';
+                dayNameCell.textContent = name;
+                container.appendChild(dayNameCell);
+            });
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day empty';
+                container.appendChild(emptyCell);
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day';
+                dayCell.textContent = d;
+                const dateStr = formatDate(year, month, d);
+                
+                const dayOfWeek = new Date(year, month - 1, d).getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) { 
+                    dayCell.classList.add('is-weekend');
+                }
+                if (isNationalHoliday(dateStr, year)) {
+                    dayCell.classList.add('is-national-holiday');
+                }
+
+                const designatedShift = designatedShiftsArray.find(ds => ds.date === dateStr);
+                if (designatedShift) {
+                    const marker = document.createElement('span');
+                    marker.className = `shift-indicator ${SHIFT_DEFINITIONS[designatedShift.shift]?.cssClass || ''}`;
+                    marker.textContent = designatedShift.shift;
+                    dayCell.appendChild(marker);
+                    dayCell.classList.add('selected'); 
+                }
+
+                dayCell.addEventListener('click', (event) => handleDesignatedDayClick(event, dateStr, designatedShiftsArray));
+                container.appendChild(dayCell);
+            }
+        }
+
+        function handleDesignatedDayClick(event, dateStr, designatedShiftsArray) {
+            event.stopPropagation();
+            closeShiftTypeSelector(); 
+
+            const selector = document.getElementById('designatedShiftTypeSelector');
+            selector.innerHTML = ''; 
+
+            const clearOption = document.createElement('div');
+            clearOption.textContent = "清除指定";
+            clearOption.onclick = (e) => {
+                e.stopPropagation();
+                const index = designatedShiftsArray.findIndex(ds => ds.date === dateStr);
+                if (index > -1) {
+                    designatedShiftsArray.splice(index, 1);
+                }
+                renderDesignatedShiftCalendar('designatedCalendarContainer', parseInt(dateStr.substring(0,4)), parseInt(dateStr.substring(5,7)), designatedShiftsArray);
+                closeShiftTypeSelector();
+            };
+            selector.appendChild(clearOption);
+
+            SHIFT_KEYS.forEach(sk => {
+                const optionDiv = document.createElement('div');
+                optionDiv.textContent = SHIFT_DEFINITIONS[sk].name;
+                optionDiv.className = `doctor-tag ${SHIFT_DEFINITIONS[sk].cssClass}`;
+                optionDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    const existingIndex = designatedShiftsArray.findIndex(ds => ds.date === dateStr);
+                    if (existingIndex > -1) {
+                        designatedShiftsArray[existingIndex].shift = sk;
+                    } else {
+                        designatedShiftsArray.push({ date: dateStr, shift: sk });
+                    }
+                    renderDesignatedShiftCalendar('designatedCalendarContainer', parseInt(dateStr.substring(0,4)), parseInt(dateStr.substring(5,7)), designatedShiftsArray);
+                    closeShiftTypeSelector();
+                };
+                selector.appendChild(optionDiv);
+            });
+
+            const rect = event.target.closest('.calendar-day').getBoundingClientRect(); 
+            selector.style.top = `${rect.bottom + window.scrollY}px`;
+            selector.style.left = `${rect.left + window.scrollX}px`;
+            selector.style.display = 'block';
+        }
+
+        function closeShiftTypeSelector() {
+            document.getElementById('designatedShiftTypeSelector').style.display = 'none';
+        }
+        
+        function saveDesignatedShiftsFromModal() {
+            updateDesignatedShiftsSummary(currentEditingDoctorDesignatedShifts);
+            closeDesignatedShiftModal();
+        }
+
+        function updateDesignatedShiftsSummary(designatedShifts) {
+            const summaryP = document.getElementById('designatedShiftsSummary');
+            if (designatedShifts && designatedShifts.length > 0) {
+                const summaryText = designatedShifts.map(ds => {
+                     const dateParts = ds.date.split('-');
+                     return `${dateParts[1]}${dateParts[2]}${ds.shift}`;
+                }).join(', ');
+                summaryP.textContent = `已指定: ${summaryText}`;
+            } else {
+                summaryP.textContent = "無指定班別";
+            }
+        }
+
+
+        // --- Scheduling Core Logic (generateSchedule, canWorkShift, comparators) ---
+        function _calcContinuityScore (doctor, prevDateObj, currentShiftKey) {
+            const prevShiftType = getPreviousShiftTypeOnDate(doctor, prevDateObj);
+            if (!prevShiftType) return 0; 
+
+            let score = 0;
+            const currentShiftIsNight = SHIFT_DEFINITIONS[currentShiftKey].isNight;
+            const prevShiftIsNight = SHIFT_DEFINITIONS[prevShiftType].isNight;
+            const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === null || doctor.constraints.maxConsecutiveWorkDays === 999 ? IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT : doctor.constraints.maxConsecutiveWorkDays;
+            const minConsecutive = doctor.constraints.minConsecutiveWorkDays === null || doctor.constraints.minConsecutiveWorkDays === 0 ? IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT : doctor.constraints.minConsecutiveWorkDays;
+
+
+            if (currentShiftIsNight === prevShiftIsNight) { 
+                score += 6; 
+                if (prevShiftType === currentShiftKey) { 
+                    score += 4; 
+                }
+                if (prevShiftType === 'D' && (currentShiftKey === 'D' || currentShiftKey === 'SD' || currentShiftKey === 'K')) {
+                    score += 2;
+                }
+                if (doctor.currentConsecutiveWorkDays >= minConsecutive - 1 &&
+                    doctor.currentConsecutiveWorkDays < maxConsecutive) {
+                    score += (doctor.currentConsecutiveWorkDays + 1) * 3; 
+                } else if (doctor.currentConsecutiveWorkDays < minConsecutive -1) {
+                    score +=1; 
+                }
+            }
+            return score;
+        }
+
+        function buildContinuityFirstComparator (year, month, day, shiftKey) {
+            return function (a, b) {
+                const prevDateObj = (day > 1) ? new Date(year, month - 1, day - 1) : null;
+                const contA = prevDateObj ? _calcContinuityScore(a, prevDateObj, shiftKey) : 0;
+                const contB = prevDateObj ? _calcContinuityScore(b, prevDateObj, shiftKey) : 0;
+                if (contA !== contB) return contB - contA; 
+
+                if (a.currentShifts !== b.currentShifts) return a.currentShifts - b.currentShifts;
+
+                const nightA = (a.currentShiftsPerType['N'] || 0) + (a.currentShiftsPerType['SN'] || 0);
+                const nightB = (b.currentShiftsPerType['N'] || 0) + (b.currentShiftsPerType['SN'] || 0);
+                if (nightA !== nightB) return nightA - nightB;
+
+                if (isWeekendOrHoliday(formatDate(year, month, day), year, month, day)) {
+                    if (a.currentWeekendShifts !== b.currentWeekendShifts) {
+                        return a.currentWeekendShifts - b.currentWeekendShifts;
+                    }
+                }
+                if ((shiftKey === 'SD' || shiftKey === 'SN') && prevDateObj) {
+                    const aWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(a, prevDateObj, shiftKey) === shiftKey;
+                    const bWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(b, prevDateObj, shiftKey) === shiftKey;
+                    if (aWorkedSameShiftYesterday && !bWorkedSameShiftYesterday) return -1;
+                    if (!aWorkedSameShiftYesterday && bWorkedSameShiftYesterday) return 1;
+                }
+                return Math.random() - 0.5; 
+            };
+        }
+
+
         function handleGenerateSchedule() {
             if (doctors.length === 0) {
                 alert("請先新增醫師資料!");
@@ -988,35 +1293,85 @@
         }
 
 
-        function generateSchedule(year, month) {
+        function generateSchedule (year, month) {
             const daysInMonth = getDaysInMonth(year, month);
-            let schedule = {}; 
-            unassignedSlotReasons = {}; 
+            let schedule = {};
+            unassignedSlotReasons = {};
+
+            // Pre-assign designated shifts
+            doctors.forEach(doc => {
+                (doc.preferences.designatedShifts || []).forEach(ds => {
+                    const dsDateParts = ds.date.split('-');
+                    const dsYear = parseInt(dsDateParts[0]);
+                    const dsMonth = parseInt(dsDateParts[1]);
+                    const dsDay = parseInt(dsDateParts[2]);
+
+                    if (dsYear === year && dsMonth === month) {
+                        const dateStr = ds.date;
+                        const shiftKey = ds.shift;
+                        if (!schedule[dateStr]) {
+                             schedule[dateStr] = {};
+                             SHIFT_KEYS.forEach(sk_init => schedule[dateStr][sk_init] = []);
+                        }
+                        if (!unassignedSlotReasons[dateStr]) unassignedSlotReasons[dateStr] = {};
+                        if (!unassignedSlotReasons[dateStr][shiftKey]) unassignedSlotReasons[dateStr][shiftKey] = [];
+
+
+                        const shiftInfo = SHIFT_DEFINITIONS[shiftKey];
+                        if (shiftInfo && schedule[dateStr][shiftKey].length < shiftInfo.required) {
+                            const canWorkResult = canWorkShift(doc, shiftKey, dateStr, year, month, dsDay); 
+                            if (canWorkResult.canWork && !schedule[dateStr][shiftKey].includes(doc.id)) {
+                                schedule[dateStr][shiftKey].push(doc.id);
+                                
+                                doc.currentShifts++;
+                                doc.currentShiftsPerType[shiftKey]++;
+                                doc.assignedShiftsDetails.push({ date: dateStr, shiftType: shiftKey });
+                                if (isWeekendOrHoliday(dateStr, year, month, dsDay)) doc.currentWeekendShifts++; 
+                                doc.currentConsecutiveWorkDays++; 
+                            } else if (!canWorkResult.canWork) {
+                                console.warn(`無法預排指定班次: ${doc.name} ${dateStr} ${shiftKey} (${canWorkResult.reason})`);
+                                const slotIndexForReason = schedule[dateStr][shiftKey].length; 
+                                if (!unassignedSlotReasons[dateStr][shiftKey][slotIndexForReason]) {
+                                    unassignedSlotReasons[dateStr][shiftKey][slotIndexForReason] = [];
+                                }
+                                unassignedSlotReasons[dateStr][shiftKey][slotIndexForReason].push(`${doc.name} (指定): ${canWorkResult.reason}`);
+                            }
+                        }
+                    }
+                });
+            });
+
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDateStr = formatDate(year, month, day);
-                schedule[currentDateStr] = {};
-                unassignedSlotReasons[currentDateStr] = {}; 
-                SHIFT_KEYS.forEach(shiftKey => {
-                    schedule[currentDateStr][shiftKey] = [];
-                    unassignedSlotReasons[currentDateStr][shiftKey] = []; 
-                });
+                if (!schedule[currentDateStr]) schedule[currentDateStr] = {}; 
+                if (!unassignedSlotReasons[currentDateStr]) unassignedSlotReasons[currentDateStr] = {};
 
                 let doctorsWorkingToday = new Set();
-                
-                SHIFT_KEYS.forEach(shiftKey => {
-                    const shiftInfo = SHIFT_DEFINITIONS[shiftKey];
-                    
-                    for (let i = 0; i < shiftInfo.required; i++) { 
-                        let slotSpecificReasons = []; 
-                        
-                        let potentialCandidates = doctors.filter(doc => {
-                            let alreadyWorkingThisShiftTypeTodayInAnotherSlot = false;
-                            if(schedule[currentDateStr][shiftKey].includes(doc.id)){
-                                alreadyWorkingThisShiftTypeTodayInAnotherSlot = true;
-                            }
-                            if(alreadyWorkingThisShiftTypeTodayInAnotherSlot) return false;
+                SHIFT_KEYS.forEach(sk => {
+                    if (schedule[currentDateStr][sk]) {
+                        schedule[currentDateStr][sk].forEach(docId => {
+                            if (docId !== 'UNASSIGNED') doctorsWorkingToday.add(docId);
+                        });
+                    }
+                });
 
+
+                SHIFT_KEYS.forEach((shiftKey) => {
+                    if (!schedule[currentDateStr][shiftKey]) schedule[currentDateStr][shiftKey] = [];
+                    if (!unassignedSlotReasons[currentDateStr][shiftKey]) unassignedSlotReasons[currentDateStr][shiftKey] = [];
+                    
+                    const shiftInfo = SHIFT_DEFINITIONS[shiftKey];
+                    const existingAssignmentsForShift = schedule[currentDateStr][shiftKey].filter(id => id !== 'UNASSIGNED').length;
+                    const slotsToFill = shiftInfo.required - existingAssignmentsForShift;
+
+
+                    for (let slot = 0; slot < slotsToFill; slot++) {
+                        let slotSpecificReasonsForThisAttempt = []; 
+                        
+                        let candidates = doctors.filter((doc) => {
+                            if (schedule[currentDateStr][shiftKey].includes(doc.id)) return false; 
+                            
                             let workingAnotherShiftTypeToday = false;
                             if(doctorsWorkingToday.has(doc.id)){
                                 for(const sk_check in schedule[currentDateStr]){
@@ -1029,102 +1384,39 @@
                             if(workingAnotherShiftTypeToday) return false;
 
 
-                            const canWorkResult = canWorkShift(doc, shiftKey, currentDateStr, year, month, day);
-                            if (!canWorkResult.canWork) {
-                                slotSpecificReasons.push(`${doc.name}: ${canWorkResult.reason}`);
-                            }
-                            return canWorkResult.canWork;
+                            const check = canWorkShift(doc, shiftKey, currentDateStr, year, month, day);
+                            if (!check.canWork) slotSpecificReasonsForThisAttempt.push(`${doc.name}: ${check.reason}`);
+                            return check.canWork;
                         });
 
+                        candidates.sort(buildContinuityFirstComparator(year, month, day, shiftKey));
 
-                        potentialCandidates.sort((a, b) => {
-                            // 1. Primary: Total shifts (fewer is better)
-                            if (a.currentShifts !== b.currentShifts) {
-                                return a.currentShifts - b.currentShifts;
-                            }
-                            // 2. Secondary: Total Night Shifts (N+SN) (fewer is better)
-                            const totalNightA = (a.currentShiftsPerType['N'] || 0) + (a.currentShiftsPerType['SN'] || 0);
-                            const totalNightB = (b.currentShiftsPerType['N'] || 0) + (b.currentShiftsPerType['SN'] || 0);
-                            if (totalNightA !== totalNightB) {
-                                return totalNightA - totalNightB;
-                            }
-                            
-                            // 3. Tertiary: Continuity Preference (Implicit Min 2, Max 4)
-                            const prevCalDayObj = new Date(year, month - 1, day - 1);
-                            let continuityScoreA = 0;
-                            let continuityScoreB = 0;
+                        const chosen = candidates[0];
+                        if (chosen) {
+                            schedule[currentDateStr][shiftKey].push(chosen.id); 
+                            doctorsWorkingToday.add(chosen.id);
 
-                            if (day > 1 && prevCalDayObj.getMonth() === month -1) {
-                                const prevShiftA = getPreviousShiftTypeOnDate(a, prevCalDayObj);
-                                const prevShiftB = getPreviousShiftTypeOnDate(b, prevCalDayObj);
-                                const aWorkedYesterday = prevShiftA !== null;
-                                const bWorkedYesterday = prevShiftB !== null;
-
-                                if (aWorkedYesterday && a.currentConsecutiveWorkDays < IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
-                                    continuityScoreA = (a.currentConsecutiveWorkDays >= IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS -1) ? 2 : 1; // Higher score if already met min or close
-                                    if (prevShiftA === shiftKey) continuityScoreA += 2; // Bonus for same shift type
-                                    if (prevShiftA === 'D' && (shiftKey === 'D' || shiftKey === 'SD' || shiftKey === 'K')) continuityScoreA +=1; // D -> D/SD/K bonus
-                                }
-                                if (bWorkedYesterday && b.currentConsecutiveWorkDays < IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
-                                    continuityScoreB = (b.currentConsecutiveWorkDays >= IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS -1) ? 2 : 1;
-                                    if (prevShiftB === shiftKey) continuityScoreB += 2;
-                                     if (prevShiftB === 'D' && (shiftKey === 'D' || shiftKey === 'SD' || shiftKey === 'K')) continuityScoreB +=1;
-                                }
-                            }
-                            if (continuityScoreA !== continuityScoreB) {
-                                return continuityScoreB - continuityScoreA; // Higher score is better (comes first)
-                            }
-                            
-                            // 4. Quaternary: Weekend/Holiday shifts if applicable for this shift
-                            if (isWeekendOrHoliday(currentDateStr, year, month, day)) {
-                                if (a.currentWeekendShifts !== b.currentWeekendShifts) {
-                                    return a.currentWeekendShifts - b.currentWeekendShifts;
-                                }
-                            }
-                            // 5. Quinary: Continuity for SD/SN (if not covered by general continuity)
-                            if ((shiftKey === 'SD' || shiftKey === 'SN') && (day > 1 && prevCalDayObj.getMonth() === month -1)) {
-                                const aWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(a, prevCalDayObj, shiftKey) === shiftKey;
-                                const bWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(b, prevCalDayObj, shiftKey) === shiftKey;
-                                if (aWorkedSameShiftYesterday && !bWorkedSameShiftYesterday) return -1;
-                                if (!aWorkedSameShiftYesterday && bWorkedSameShiftYesterday) return 1;
-                            }
-                            return Math.random() - 0.5; 
-                        });
-
-                        let assignedDoctor = null;
-                        if (potentialCandidates.length > 0) {
-                            assignedDoctor = potentialCandidates[0]; 
-                        }
-
-
-                        if (assignedDoctor) {
-                            schedule[currentDateStr][shiftKey].push(assignedDoctor.id);
-                            doctorsWorkingToday.add(assignedDoctor.id); 
-                            
-                            assignedDoctor.currentShifts++;
-                            assignedDoctor.currentShiftsPerType[shiftKey]++;
-                            assignedDoctor.assignedShiftsDetails.push({ date: currentDateStr, shiftType: shiftKey });
-
-                            if (isWeekendOrHoliday(currentDateStr, year, month, day)) {
-                                assignedDoctor.currentWeekendShifts++;
-                            }
-                            assignedDoctor.currentConsecutiveWorkDays++; 
+                            chosen.currentShifts++;
+                            chosen.currentShiftsPerType[shiftKey]++;
+                            chosen.assignedShiftsDetails.push({ date: currentDateStr, shiftType: shiftKey });
+                            if (isWeekendOrHoliday(currentDateStr, year, month, day)) chosen.currentWeekendShifts++;
+                            chosen.currentConsecutiveWorkDays++;
                         } else {
                             schedule[currentDateStr][shiftKey].push('UNASSIGNED');
-                            if (!unassignedSlotReasons[currentDateStr][shiftKey][i]) {
-                                unassignedSlotReasons[currentDateStr][shiftKey][i] = [];
+                            const reasonSlotIndex = existingAssignmentsForShift + slot;
+                            if (!unassignedSlotReasons[currentDateStr][shiftKey][reasonSlotIndex]) {
+                                unassignedSlotReasons[currentDateStr][shiftKey][reasonSlotIndex] = [];
                             }
-                            unassignedSlotReasons[currentDateStr][shiftKey][i].push(...slotSpecificReasons);
-                            if(unassignedSlotReasons[currentDateStr][shiftKey][i].length === 0) {
-                                unassignedSlotReasons[currentDateStr][shiftKey][i].push("無符合條件的醫師。");
+                            unassignedSlotReasons[currentDateStr][shiftKey][reasonSlotIndex].push(...slotSpecificReasonsForThisAttempt);
+                            if(unassignedSlotReasons[currentDateStr][shiftKey][reasonSlotIndex].length === 0) {
+                                unassignedSlotReasons[currentDateStr][shiftKey][reasonSlotIndex].push("無符合條件的醫師。");
                             }
                         }
                     }
                 });
-                doctors.forEach(doc => {
-                    if (!doctorsWorkingToday.has(doc.id)) { 
-                        doc.currentConsecutiveWorkDays = 0; 
-                    }
+
+                doctors.forEach((doc) => {
+                    if (!doctorsWorkingToday.has(doc.id)) doc.currentConsecutiveWorkDays = 0;
                 });
             }
             return schedule;
@@ -1133,6 +1425,9 @@
         function canWorkShift(doctor, shiftKey, dateStr, year, month, day) {
             const shiftInfo = SHIFT_DEFINITIONS[shiftKey];
             let reason = "";
+            const minConsecutive = doctor.constraints.minConsecutiveWorkDays === null ? IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT : doctor.constraints.minConsecutiveWorkDays;
+            const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === null || doctor.constraints.maxConsecutiveWorkDays === 999 ? IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT : doctor.constraints.maxConsecutiveWorkDays;
+
             
             if (doctor.daysOff.includes(dateStr)) {
                 reason = "預休"; return { canWork: false, reason: reason };
@@ -1161,9 +1456,9 @@
                     reason = `假日班上限 (${doctor.constraints.maxWeekendShifts})`; return { canWork: false, reason: reason };
                  }
             }
-            // Use IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS for the check
-            if (doctor.currentConsecutiveWorkDays >= IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
-                reason = `連續上班達上限 (${IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS}天)`; return { canWork: false, reason: reason };
+
+            if (doctor.currentConsecutiveWorkDays >= maxConsecutive) {
+                reason = `連續上班達上限 (${maxConsecutive}天)`; return { canWork: false, reason: reason };
             }
             
             if (shiftInfo.isNight) { 
@@ -1252,7 +1547,11 @@
                                                     <span class="unassigned-reason-icon" onclick="showUnassignedReasons('${currentDateStr}', '${shiftKey}', ${slotIndex})">?</span>`;
                                 } else if (assignee) {
                                     const doctor = doctors.find(d => d.id === assignee);
-                                    cellContent += `<span class="doctor-tag ${shiftInfo.cssClass}" onclick="showDoctorSwapOptions(event, '${currentDateStr}', '${shiftKey}', ${slotIndex}, '${assignee}')">${doctor ? doctor.name.substring(0,3) : '錯誤'}</span>`;
+                                    let tagClass = shiftInfo.cssClass;
+                                    const isDesignated = (doctor.preferences.designatedShifts || []).some(ds => ds.date === currentDateStr && ds.shift === shiftKey && schedule[currentDateStr][shiftKey].includes(doctor.id));
+                                    const designatedMarker = isDesignated ? `<span class="designated-shift-marker">*</span>` : "";
+
+                                    cellContent += `<span class="doctor-tag ${tagClass}" onclick="showDoctorSwapOptions(event, '${currentDateStr}', '${shiftKey}', ${slotIndex}, '${assignee}')">${doctor ? doctor.name.substring(0,3) : '錯誤'}${designatedMarker}</span>`;
                                 } else {
                                      cellContent += `<span class="text-gray-400"></span>`; 
                                 }
@@ -1296,41 +1595,52 @@
             
             currentSwapDetails = { dateStr, shiftKey, slotIndex, oldDoctorId: currentDoctorId, dropdownElement: dropdown };
 
-            const availableDoctorsForSwap = doctors.filter(doc => {
-                if (doc.id === currentDoctorId) return false; 
-                
-                const year = parseInt(dateStr.substring(0,4));
-                const month = parseInt(dateStr.substring(5,7));
-                const dayOfMonth = parseInt(dateStr.substring(8,10));
+            const currentDoctor = doctors.find(d => d.id === currentDoctorId);
+            const isCurrentShiftDesignated = (currentDoctor.preferences.designatedShifts || []).some(ds => ds.date === dateStr && ds.shift === shiftKey);
 
-                let workingAnotherShift = false;
-                for(const sk_check in generatedScheduleData[dateStr]){
-                    if(sk_check !== shiftKey && generatedScheduleData[dateStr][sk_check].includes(doc.id)){
-                        workingAnotherShift = true;
-                        break;
-                    }
-                }
-                if(workingAnotherShift) return false;
-
-                const canWorkCheck = canWorkShift(doc, shiftKey, dateStr, year, month, dayOfMonth);
-                return canWorkCheck.canWork;
-            });
-
-            if (availableDoctorsForSwap.length === 0) {
+            if (isCurrentShiftDesignated) {
                 const noOptionDiv = document.createElement('div');
-                noOptionDiv.textContent = '無其他合適醫師';
+                noOptionDiv.textContent = '此為指定班，不可替換';
+                noOptionDiv.style.cursor = 'not-allowed';
+                noOptionDiv.style.color = 'gray';
                 dropdown.appendChild(noOptionDiv);
             } else {
-                availableDoctorsForSwap.forEach(doc => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.textContent = doc.name;
-                    optionDiv.onclick = (e) => {
-                        e.stopPropagation();
-                        handleDoctorSwap(dateStr, shiftKey, slotIndex, currentDoctorId, doc.id);
-                        closeAllDropdowns();
-                    };
-                    dropdown.appendChild(optionDiv);
+                const availableDoctorsForSwap = doctors.filter(doc => {
+                    if (doc.id === currentDoctorId) return false; 
+                    
+                    const year = parseInt(dateStr.substring(0,4));
+                    const month = parseInt(dateStr.substring(5,7));
+                    const dayOfMonth = parseInt(dateStr.substring(8,10));
+
+                    let workingAnotherShift = false;
+                    for(const sk_check in generatedScheduleData[dateStr]){
+                        if(sk_check !== shiftKey && generatedScheduleData[dateStr][sk_check].includes(doc.id)){
+                            workingAnotherShift = true;
+                            break;
+                        }
+                    }
+                    if(workingAnotherShift) return false;
+
+                    const canWorkCheck = canWorkShift(doc, shiftKey, dateStr, year, month, dayOfMonth);
+                    return canWorkCheck.canWork;
                 });
+
+                if (availableDoctorsForSwap.length === 0) {
+                    const noOptionDiv = document.createElement('div');
+                    noOptionDiv.textContent = '無其他合適醫師';
+                    dropdown.appendChild(noOptionDiv);
+                } else {
+                    availableDoctorsForSwap.forEach(doc => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.textContent = doc.name;
+                        optionDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            handleDoctorSwap(dateStr, shiftKey, slotIndex, currentDoctorId, doc.id);
+                            closeAllDropdowns();
+                        };
+                        dropdown.appendChild(optionDiv);
+                    });
+                }
             }
             
             const rect = currentDoctorTag.getBoundingClientRect();
@@ -1439,7 +1749,7 @@
             SHIFT_KEYS.forEach(sk => table += `<th class="py-3 px-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">${sk} (下/上)</th>`);
             table += `          <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">夜班總數</th>
                                     <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">假日/節慶班 (下/上)</th>
-                                    <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">最大連上</th>
+                                    <th class="py-3 px-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">最大連上 (下/上)</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">`;
@@ -1473,7 +1783,8 @@
             docs.forEach(doctor => {
                 const minTotal = doctor.constraints.minTotalShifts === null ? '-' : doctor.constraints.minTotalShifts;
                 const maxTotal = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? '無' : doctor.constraints.maxTotalShifts;
-                const maxConsecutiveDisplay = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS; // Display global rule
+                const minConsecutive = doctor.constraints.minConsecutiveWorkDays === null ? '-' : doctor.constraints.minConsecutiveWorkDays;
+                const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '無' : doctor.constraints.maxConsecutiveWorkDays;
                 table += `<tr>
                             <td class="py-2 px-4 whitespace-nowrap text-sm font-medium text-gray-900">${doctor.name}</td>
                             <td class="py-2 px-4 whitespace-nowrap text-sm text-gray-700 text-center">${doctor.currentShifts} (${minTotal}/${maxTotal})</td>`;
@@ -1486,7 +1797,7 @@
                 const minWeekend = doctor.constraints.minWeekendShifts === null ? '-' : doctor.constraints.minWeekendShifts;
                 const maxWeekend = doctor.constraints.maxWeekendShifts === 999 || doctor.constraints.maxWeekendShifts === null ? '無' : doctor.constraints.maxWeekendShifts;
                 table += `  <td class="py-2 px-4 whitespace-nowrap text-sm text-gray-700 text-center">${doctor.currentWeekendShifts} (${minWeekend}/${maxWeekend})</td>
-                            <td class="py-2 px-4 whitespace-nowrap text-sm text-gray-700 text-center">${doctor.summaryMaxConsecutive} / ${maxConsecutiveDisplay}</td>
+                            <td class="py-2 px-4 whitespace-nowrap text-sm text-gray-700 text-center">${doctor.summaryMaxConsecutive} (${minConsecutive}/${maxConsecutive})</td>
                           </tr>`;
             });
 
@@ -1564,14 +1875,15 @@
             csvContent.push(""); 
             csvContent.push(escapeCSV("醫師排班統計"));
             
-            const summaryHeaders = ["醫師", "總班數 (下/上)", ...SHIFT_KEYS.map(sk => `${sk} (下/上)`), "夜班總數", "假日/節慶班 (下/上)", "最大連上"];
+            const summaryHeaders = ["醫師", "總班數 (下/上)", ...SHIFT_KEYS.map(sk => `${sk} (下/上)`), "夜班總數", "假日/節慶班 (下/上)", "最大連上 (下/上)"];
             csvContent.push(summaryHeaders.map(h => escapeCSV(h)).join(','));
 
             doctors.forEach(doc => {
                 const minTotal = doc.constraints.minTotalShifts === null ? '-' : doc.constraints.minTotalShifts;
                 const maxTotal = doc.constraints.maxTotalShifts === 999 || doc.constraints.maxTotalShifts === null ? '無' : doc.constraints.maxTotalShifts;
                 const totalNightShifts = (doc.currentShiftsPerType['N'] || 0) + (doc.currentShiftsPerType['SN'] || 0);
-                const maxConsecutiveDisplay = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS; // Display global rule
+                const minConsecutive = doc.constraints.minConsecutiveWorkDays === null ? '-' : doc.constraints.minConsecutiveWorkDays;
+                const maxConsecutive = doc.constraints.maxConsecutiveWorkDays === 999 || doc.constraints.maxConsecutiveWorkDays === null ? '無' : doc.constraints.maxConsecutiveWorkDays;
 
                 let row = [
                     escapeCSV(doc.name),
@@ -1587,7 +1899,7 @@
                 const maxWeekend = doc.constraints.maxWeekendShifts === 999 || doc.constraints.maxWeekendShifts === null ? '無' : doc.constraints.maxWeekendShifts;
 
                 row.push(formatCSVTextCell(`${doc.currentWeekendShifts} (${minWeekend}/${maxWeekend})`));
-                row.push(formatCSVTextCell(`${doc.summaryMaxConsecutive || 0} / ${maxConsecutiveDisplay}`)); 
+                row.push(formatCSVTextCell(`${doc.summaryMaxConsecutive || 0} (${minConsecutive}/${maxConsecutive})`)); 
                 csvContent.push(row.join(','));
             });
 
