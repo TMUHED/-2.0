@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .table-cell-content { min-height: 80px; position: relative; } /* For unassigned reason icon */
+        .table-cell-content { min-height: 80px; position: relative; } 
         .day-header { background-color: #f3f4f6; } 
         .weekend { background-color: #f3f4f6; } 
         .national-holiday { background-color: #fef3c7; } 
@@ -21,7 +21,7 @@
             border-radius: 4px;
             font-size: 0.8em;
             margin: 2px;
-            cursor: pointer; /* For manual adjustment */
+            cursor: pointer; 
         }
         .D-shift { background-color: #e0f2fe; color: #0c4a6e; } 
         .N-shift { background-color: #334155; color: #f1f5f9; } 
@@ -37,9 +37,9 @@
             text-align: center;
             font-size: 10px;
             font-weight: bold;
-            color: #7f1d1d; /* dark red */
-            background-color: #fecaca; /* light red */
-            border: 1px solid #ef4444; /* red */
+            color: #7f1d1d; 
+            background-color: #fecaca; 
+            border: 1px solid #ef4444; 
             border-radius: 50%;
             cursor: help;
             margin-left: 4px;
@@ -55,7 +55,7 @@
             background-color: #fefefe; margin: 3% auto; padding: 20px;
             border: 1px solid #888; width: 90%; max-width: 750px; 
             border-radius: 8px;
-            position: relative; /* For dropdown positioning */
+            position: relative; 
         }
         .close-button {
             color: #aaa; float: right; font-size: 28px; font-weight: bold;
@@ -97,13 +97,12 @@
         .calendar-day.is-weekend.is-national-holiday { background-color: #fef9c3; }
         .calendar-day.selected.is-national-holiday { background-color: #3b82f6; color: white; } 
 
-        /* Doctor Swap Dropdown Styles */
         .doctor-swap-dropdown {
             position: absolute;
             background-color: white;
             border: 1px solid #ccc;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1001; /* Above modal content */
+            z-index: 1001; 
             max-height: 200px;
             overflow-y: auto;
             border-radius: 4px;
@@ -116,9 +115,8 @@
         .doctor-swap-dropdown div:hover {
             background-color: #f0f0f0;
         }
-        /* Unassigned Reason Modal */
         #unassignedReasonModal .modal-content {
-            max-width: 500px; /* Smaller modal for reasons */
+            max-width: 500px; 
             max-height: 70vh;
             overflow-y: auto;
         }
@@ -176,7 +174,7 @@
                 <button id="exportCsvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-md shadow">
                     匯出CSV (Excel)
                 </button>
-            </div>
+                </div>
 
 
             <div class="mb-6">
@@ -323,7 +321,7 @@
             <span class="close-button" onclick="closeUnassignedReasonModal()">&times;</span>
             <h3 id="unassignedReasonModalTitle" class="text-xl font-semibold mb-4">無法排班原因</h3>
             <ul id="unassignedReasonList" class="text-sm text-gray-700 list-disc pl-5">
-                </ul>
+            </ul>
         </div>
     </div>
 
@@ -380,6 +378,7 @@
             });
             document.getElementById('clearSavedSettingsBtn').addEventListener('click', clearSavedSettings);
             document.getElementById('exportCsvBtn').addEventListener('click', exportScheduleToCSV);
+            // Removed PNG export button event listener
 
             document.getElementById('doctorCannotWorkNightsInput').addEventListener('change', handlePreferenceChange);
             document.getElementById('doctorCannotWorkSDInput').addEventListener('change', handlePreferenceChange);
@@ -540,6 +539,9 @@
             SHIFT_KEYS.forEach(sk => {
                 shiftInputs[`min${sk}`] = document.getElementById(`doctorMin${sk}Input`);
                 shiftInputs[`max${sk}`] = document.getElementById(`doctorMax${sk}Input`);
+                // Ensure dataset.originalValue is set if not already
+                if (shiftInputs[`min${sk}`] && shiftInputs[`min${sk}`].dataset.originalValue === undefined) shiftInputs[`min${sk}`].dataset.originalValue = shiftInputs[`min${sk}`].value || "";
+                if (shiftInputs[`max${sk}`] && shiftInputs[`max${sk}`].dataset.originalValue === undefined) shiftInputs[`max${sk}`].dataset.originalValue = shiftInputs[`max${sk}`].value || "";
             });
             
             // Restore all to original dataset values before applying new logic
@@ -547,7 +549,7 @@
                 const inputElement = shiftInputs[inputKey];
                 if (inputElement) {
                     inputElement.disabled = false;
-                    inputElement.value = inputElement.dataset.originalValue === undefined ? "" : inputElement.dataset.originalValue;
+                    inputElement.value = inputElement.dataset.originalValue;
                 }
             }
             cannotWorkNights_cb.disabled = false;
@@ -946,7 +948,7 @@
             const year = parseInt(document.getElementById('year-select').value);
             const month = parseInt(document.getElementById('month-select').value);
             
-            unassignedSlotReasons = {}; // Clear previous reasons
+            unassignedSlotReasons = {}; 
 
             doctors.forEach(doc => {
                 doc.currentShifts = 0;
@@ -1007,17 +1009,24 @@
                         let slotSpecificReasons = []; 
                         
                         let potentialCandidates = doctors.filter(doc => {
-                            if (doctorsWorkingToday.has(doc.id) && !schedule[currentDateStr][shiftKey].includes(doc.id)) {
-                                // If doctor is working today BUT not in the current shift's slots (e.g. D1 filled, checking for D2)
-                                // this check might be too strict. `canWorkShift` should handle if they can take *another* shift.
-                                // For now, this primarily prevents a doctor from being D1 and N1 on same day.
-                                // The check `!schedule[currentDateStr][shiftKey].includes(doc.id)` is more about multi-slot shifts of same type.
-                                return false;
+                            let alreadyWorkingThisShiftTypeTodayInAnotherSlot = false;
+                            if(schedule[currentDateStr][shiftKey].includes(doc.id)){
+                                alreadyWorkingThisShiftTypeTodayInAnotherSlot = true;
                             }
-                            return true; // Initial broad filter
-                        });
-                        
-                        potentialCandidates = potentialCandidates.filter(doc => {
+                            if(alreadyWorkingThisShiftTypeTodayInAnotherSlot) return false;
+
+                            let workingAnotherShiftTypeToday = false;
+                            if(doctorsWorkingToday.has(doc.id)){
+                                for(const sk_check in schedule[currentDateStr]){
+                                    if(sk_check !== shiftKey && schedule[currentDateStr][sk_check].includes(doc.id)){
+                                        workingAnotherShiftTypeToday = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if(workingAnotherShiftTypeToday) return false;
+
+
                             const canWorkResult = canWorkShift(doc, shiftKey, currentDateStr, year, month, day);
                             if (!canWorkResult.canWork) {
                                 slotSpecificReasons.push(`${doc.name}: ${canWorkResult.reason}`);
@@ -1036,8 +1045,8 @@
                             if (day > 1 && prevCalDayObj.getMonth() === month -1) {
                                 const aWorkedYesterday = getPreviousShiftTypeOnDate(a, prevCalDayObj) !== null;
                                 const bWorkedYesterday = getPreviousShiftTypeOnDate(b, prevCalDayObj) !== null;
-                                if (aWorkedYesterday && !bWorkedYesterday) return -1; 
-                                if (!aWorkedYesterday && bWorkedYesterday) return 1;  
+                                if (aWorkedYesterday && !bWorkedYesterday && (a.constraints.maxConsecutiveWorkDays === null || a.constraints.maxConsecutiveWorkDays === 999 || a.currentConsecutiveWorkDays < a.constraints.maxConsecutiveWorkDays) ) return -1; 
+                                if (!aWorkedYesterday && bWorkedYesterday && (b.constraints.maxConsecutiveWorkDays === null || b.constraints.maxConsecutiveWorkDays === 999 || b.currentConsecutiveWorkDays < b.constraints.maxConsecutiveWorkDays) ) return 1;  
                             }
                             if (isWeekendOrHoliday(currentDateStr, year, month, day)) {
                                 if (a.currentWeekendShifts !== b.currentWeekendShifts) return a.currentWeekendShifts - b.currentWeekendShifts;
@@ -1050,16 +1059,27 @@
                                     if (!aWorkedSameShiftYesterday && bWorkedSameShiftYesterday) return 1;
                                 }
                             }
+                            if (day > 1 && prevCalDayObj.getMonth() === month -1) {
+                                const prevShiftA = getPreviousShiftTypeOnDate(a, prevCalDayObj);
+                                const prevShiftB = getPreviousShiftTypeOnDate(b, prevCalDayObj);
+                                if (prevShiftA === 'D' && prevShiftB !== 'D') { 
+                                    if (shiftKey === 'D') return -1; 
+                                    else if (shiftKey === 'SD' && !b.preferences.cannotWorkShiftTypes.includes('D')) return -1; 
+                                    else if (shiftKey === 'K' && !b.preferences.cannotWorkShiftTypes.includes('D') && !b.preferences.cannotWorkShiftTypes.includes('SD')) return -1;
+                                }
+                                if (prevShiftB === 'D' && prevShiftA !== 'D') {
+                                     if (shiftKey === 'D') return 1; 
+                                     else if (shiftKey === 'SD' && !a.preferences.cannotWorkShiftTypes.includes('D')) return 1;
+                                     else if (shiftKey === 'K' && !a.preferences.cannotWorkShiftTypes.includes('D') && !a.preferences.cannotWorkShiftTypes.includes('SD')) return 1;
+                                }
+                            }
+
                             return Math.random() - 0.5; 
                         });
 
                         let assignedDoctor = null;
-                        // Find a doctor from sorted candidates not already in *this specific shift's slots for today*
-                        for (const candidate of potentialCandidates) {
-                            if (!schedule[currentDateStr][shiftKey].includes(candidate.id)) {
-                                assignedDoctor = candidate;
-                                break;
-                            }
+                        if (potentialCandidates.length > 0) {
+                            assignedDoctor = potentialCandidates[0]; 
                         }
 
 
@@ -1104,15 +1124,11 @@
                 reason = "預休"; return { canWork: false, reason: reason };
             }
             if (day === 1 && doctor.preferences.previousMonthNightShift && !shiftInfo.isNight) {
-                reason = "上月最後日夜班"; return { canWork: false, reason: reason };
+                reason = "上月最後日夜班，本日不宜白班"; return { canWork: false, reason: reason };
             }
             
             if (doctor.constraints.maxTotalShifts !== null && doctor.constraints.maxTotalShifts !== 999 && doctor.currentShifts >= doctor.constraints.maxTotalShifts) {
                 reason = `總班數上限 (${doctor.constraints.maxTotalShifts})`; return { canWork: false, reason: reason };
-            }
-            if (doctor.constraints.minTotalShifts !== null && doctor.currentShifts < doctor.constraints.minTotalShifts && (day / getDaysInMonth(year, month)) > 0.8 && (doctor.constraints.minTotalShifts - doctor.currentShifts) > (getDaysInMonth(year, month) - day + 1) ) {
-                // If nearing end of month and it's impossible to meet min shifts, this could be a reason. Complex to make a hard rule.
-                // reason = `可能無法達總班數下限 (${doctor.constraints.minTotalShifts})`; // Soft reason, might not block
             }
             
             if (doctor.constraints.maxShiftsPerType[shiftKey] !== null && doctor.constraints.maxShiftsPerType[shiftKey] !== 999 && doctor.currentShiftsPerType[shiftKey] >= doctor.constraints.maxShiftsPerType[shiftKey]) {
@@ -1158,7 +1174,7 @@
                         if (!currentIsNight && previousIsNight === true) {
                             reason = `避免夜班(${previousShiftType})接白班(${shiftKey})`; return { canWork: false, reason: reason };
                         }
-                        if (previousShiftType === 'K' && shiftKey === 'D') { // Avoid K -> D
+                        if (previousShiftType === 'K' && shiftKey === 'D') { 
                              reason = `避免K班後接D班`; return { canWork: false, reason: reason };
                         }
                     }
@@ -1218,8 +1234,7 @@
                             for(let slotIndex = 0; slotIndex < shiftInfo.required; slotIndex++) {
                                 const assignee = assignedSlots[slotIndex];
                                 if (assignee === 'UNASSIGNED') {
-                                    const reasons = unassignedSlotReasons[currentDateStr]?.[shiftKey]?.[slotIndex]?.slice(0,5).join('; ') || "無適用醫師"; // Show first 5 reasons
-                                    cellContent += `<span class="doctor-tag unassigned-shift" title="${escapeCSV(reasons)}">未分配</span>
+                                    cellContent += `<span class="doctor-tag unassigned-shift">未分配</span>
                                                     <span class="unassigned-reason-icon" onclick="showUnassignedReasons('${currentDateStr}', '${shiftKey}', ${slotIndex})">?</span>`;
                                 } else if (assignee) {
                                     const doctor = doctors.find(d => d.id === assignee);
@@ -1245,7 +1260,7 @@
         }
 
         function showUnassignedReasons(dateStr, shiftKey, slotIndex) {
-            const reasons = unassignedSlotReasons[dateStr]?.[shiftKey]?.[slotIndex] || ["未記錄原因。"];
+            const reasons = unassignedSlotReasons[dateStr]?.[shiftKey]?.[slotIndex] || ["未記錄原因或所有醫師均已排班。"];
             const modal = document.getElementById('unassignedReasonModal');
             const title = document.getElementById('unassignedReasonModalTitle');
             const list = document.getElementById('unassignedReasonList');
@@ -1255,11 +1270,11 @@
             modal.style.display = 'block';
         }
         
-        let currentSwapDetails = null; // To store details for the active swap dropdown
+        let currentSwapDetails = null; 
 
         function showDoctorSwapOptions(event, dateStr, shiftKey, slotIndex, currentDoctorId) {
-            event.stopPropagation(); // Prevent click from bubbling to document body
-            closeAllDropdowns(); // Close any existing dropdowns
+            event.stopPropagation(); 
+            closeAllDropdowns(); 
 
             const currentDoctorTag = event.target;
             const dropdown = document.createElement('div');
@@ -1268,20 +1283,23 @@
             currentSwapDetails = { dateStr, shiftKey, slotIndex, oldDoctorId: currentDoctorId, dropdownElement: dropdown };
 
             const availableDoctorsForSwap = doctors.filter(doc => {
-                if (doc.id === currentDoctorId) return false; // Don't list the current doctor
+                if (doc.id === currentDoctorId) return false; 
                 
-                // Create a temporary state for the candidate doctor to check `canWorkShift`
-                // This is a simplified check; a full re-evaluation is complex.
-                // It assumes this swap is the *only* change for the candidate.
-                const tempAssignedDetails = [...doc.assignedShiftsDetails];
-                if (!tempAssignedDetails.some(s => s.date === dateStr)) { // If not already working today
-                    const canWorkCheck = canWorkShift(doc, shiftKey, dateStr, 
-                                                    parseInt(dateStr.substring(0,4)), 
-                                                    parseInt(dateStr.substring(5,7)), 
-                                                    parseInt(dateStr.substring(8,10)));
-                    return canWorkCheck.canWork;
+                const year = parseInt(dateStr.substring(0,4));
+                const month = parseInt(dateStr.substring(5,7));
+                const dayOfMonth = parseInt(dateStr.substring(8,10));
+
+                let workingAnotherShift = false;
+                for(const sk_check in generatedScheduleData[dateStr]){
+                    if(sk_check !== shiftKey && generatedScheduleData[dateStr][sk_check].includes(doc.id)){
+                        workingAnotherShift = true;
+                        break;
+                    }
                 }
-                return false; // If already working today, don't offer as simple swap (too complex to re-validate their other shift)
+                if(workingAnotherShift) return false;
+
+                const canWorkCheck = canWorkShift(doc, shiftKey, dateStr, year, month, dayOfMonth);
+                return canWorkCheck.canWork;
             });
 
             if (availableDoctorsForSwap.length === 0) {
@@ -1301,7 +1319,6 @@
                 });
             }
             
-            // Position dropdown near the clicked tag
             const rect = currentDoctorTag.getBoundingClientRect();
             dropdown.style.top = `${rect.bottom + window.scrollY}px`;
             dropdown.style.left = `${rect.left + window.scrollX}px`;
@@ -1309,71 +1326,76 @@
         }
 
         function handleDoctorSwap(dateStr, shiftKey, slotIndex, oldDoctorId, newDoctorId) {
-            // 1. Validate if the new doctor can actually take the shift (more robust check)
             const year = parseInt(dateStr.substring(0,4));
             const month = parseInt(dateStr.substring(5,7));
-            const day = parseInt(dateStr.substring(8,10));
+            const dayOfMonth = parseInt(dateStr.substring(8,10));
             const newDoctor = doctors.find(d => d.id === newDoctorId);
-
-            // Temporarily adjust stats for validation
             const oldDoctor = doctors.find(d => d.id === oldDoctorId);
+
+            // Create a temporary copy of the new doctor to simulate the change for validation
+            let tempNewDoctor = JSON.parse(JSON.stringify(newDoctor));
+            tempNewDoctor.currentShifts = newDoctor.currentShifts; 
+            tempNewDoctor.currentShiftsPerType = {...newDoctor.currentShiftsPerType};
+            tempNewDoctor.currentWeekendShifts = newDoctor.currentWeekendShifts;
+            tempNewDoctor.currentConsecutiveWorkDays = newDoctor.currentConsecutiveWorkDays;
+            tempNewDoctor.assignedShiftsDetails = [...newDoctor.assignedShiftsDetails];
+
+
             if (oldDoctor) {
-                oldDoctor.currentShifts--;
-                oldDoctor.currentShiftsPerType[shiftKey]--;
-                if (isWeekendOrHoliday(dateStr, year, month, day)) oldDoctor.currentWeekendShifts--;
-                // Note: Consecutive days are harder to adjust temporarily for a single swap validation
+                tempNewDoctor.currentShifts = newDoctor.currentShifts; 
+                tempNewDoctor.currentShiftsPerType[shiftKey] = newDoctor.currentShiftsPerType[shiftKey];
+                if (isWeekendOrHoliday(dateStr, year, month, dayOfMonth)) {
+                     tempNewDoctor.currentWeekendShifts = newDoctor.currentWeekendShifts;
+                }
             }
             
-            const canNewDoctorWork = canWorkShift(newDoctor, shiftKey, dateStr, year, month, day);
+            const canNewDoctorWork = canWorkShift(tempNewDoctor, shiftKey, dateStr, year, month, dayOfMonth);
 
             if (!canNewDoctorWork.canWork) {
                 alert(`無法替換: ${newDoctor.name} ${canNewDoctorWork.reason}`);
-                // Revert stats for old doctor if swap fails
-                if (oldDoctor) {
-                    oldDoctor.currentShifts++;
-                    oldDoctor.currentShiftsPerType[shiftKey]++;
-                     if (isWeekendOrHoliday(dateStr, year, month, day)) oldDoctor.currentWeekendShifts++;
-                }
                 return;
             }
 
-            // 2. Perform the swap in generatedScheduleData
             const shiftAssignments = generatedScheduleData[dateStr][shiftKey];
             const oldDoctorIndexInSlot = shiftAssignments.indexOf(oldDoctorId);
-            if (oldDoctorIndexInSlot > -1) { // Should always be true if UI was correct
+             if (oldDoctorIndexInSlot !== -1) {
                 shiftAssignments[oldDoctorIndexInSlot] = newDoctorId;
-            } else { // Fallback if something went wrong with slotIndex logic
-                 shiftAssignments[slotIndex] = newDoctorId; // Use original slotIndex
+            } else { 
+                shiftAssignments[slotIndex] = newDoctorId;
             }
 
 
-            // 3. Update stats for the new doctor
+            if (oldDoctor) {
+                oldDoctor.currentShifts--;
+                oldDoctor.currentShiftsPerType[shiftKey]--;
+                oldDoctor.assignedShiftsDetails = oldDoctor.assignedShiftsDetails.filter(s => !(s.date === dateStr && s.shiftType === shiftKey));
+                if (isWeekendOrHoliday(dateStr, year, month, dayOfMonth)) oldDoctor.currentWeekendShifts--;
+                let maxC = 0, currentC = 0;
+                const sortedShiftsOld = [...oldDoctor.assignedShiftsDetails].sort((a,b) => new Date(a.date) - new Date(b.date));
+                let uniqueDatesWorkedOld = new Set();
+                sortedShiftsOld.forEach(s => uniqueDatesWorkedOld.add(s.date));
+                for (let d = 1; d <= getDaysInMonth(year, month); d++) {
+                    const dStr = formatDate(year, month, d);
+                    if (uniqueDatesWorkedOld.has(dStr)) currentC++; else {maxC = Math.max(maxC, currentC); currentC = 0;}
+                }
+                oldDoctor.currentConsecutiveWorkDays = currentC; 
+            }
+            
             newDoctor.currentShifts++;
             newDoctor.currentShiftsPerType[shiftKey]++;
             newDoctor.assignedShiftsDetails.push({ date: dateStr, shiftType: shiftKey });
-            if (isWeekendOrHoliday(dateStr, year, month, day)) newDoctor.currentWeekendShifts++;
-            // Consecutive days for new doctor would also need full re-evaluation or careful update.
-            // For simplicity, we assume this manual swap is an override that the user deems acceptable.
-            // A full re-calculation of consecutive days for *all* doctors is too heavy here.
-            // We can update for the swapped doctors:
-            newDoctor.currentConsecutiveWorkDays = 1; // Assume this starts a new block or continues one
-            if (day > 1) {
-                const prevCalDay = new Date(year, month - 1, day - 1);
-                if (getPreviousShiftTypeOnDate(newDoctor, prevCalDay)) {
-                    // This requires finding their *actual* previous consecutive days before this swap.
-                    // For now, this is a simplified update.
-                }
+            if (isWeekendOrHoliday(dateStr, year, month, dayOfMonth)) newDoctor.currentWeekendShifts++;
+            let maxCN = 0, currentCN = 0;
+            const sortedShiftsNew = [...newDoctor.assignedShiftsDetails].sort((a,b) => new Date(a.date) - new Date(b.date));
+            let uniqueDatesWorkedNew = new Set();
+            sortedShiftsNew.forEach(s => uniqueDatesWorkedNew.add(s.date));
+             for (let d = 1; d <= getDaysInMonth(year, month); d++) {
+                const dStr = formatDate(year, month, d);
+                if (uniqueDatesWorkedNew.has(dStr)) currentCN++; else {maxCN = Math.max(maxCN, currentCN); currentCN = 0;}
             }
-            if(oldDoctor){
-                 // Recalculate oldDoctor's consecutive days from their assignedShiftsDetails
-                 let tempConsecutive = 0;
-                 let maxConsecutiveOld = 0;
-                 oldDoctor.assignedShiftsDetails = oldDoctor.assignedShiftsDetails.filter(s => !(s.date === dateStr && s.shiftType === shiftKey));
-                 // This is still not perfect for consecutive days without a full re-scan.
-            }
+            newDoctor.currentConsecutiveWorkDays = currentCN;
 
 
-            // 4. Re-render schedule and summary
             displaySchedule(generatedScheduleData, year, month);
             displaySummary(doctors, year, month);
             alert(`${oldDoctor ? oldDoctor.name : '醫師'} 已被 ${newDoctor.name} 替換於 ${dateStr} 的 ${shiftKey} 班。`);
@@ -1384,10 +1406,11 @@
             dropdowns.forEach(d => d.remove());
             currentSwapDetails = null;
         }
-        // Close dropdown if clicking outside
         document.addEventListener('click', (event) => {
             if (currentSwapDetails && currentSwapDetails.dropdownElement && !currentSwapDetails.dropdownElement.contains(event.target)) {
-                closeAllDropdowns();
+                if (!event.target.classList.contains('doctor-tag')) {
+                    closeAllDropdowns();
+                }
             }
         });
 
@@ -1414,7 +1437,6 @@
             docs.forEach(doc => {
                 let maxConsecutive = 0;
                 let currentConsecutive = 0;
-                // Recalculate consecutive days based on assignedShiftsDetails for accuracy in summary
                 const sortedShifts = [...doc.assignedShiftsDetails].sort((a,b) => new Date(a.date) - new Date(b.date));
                 let uniqueDatesWorked = new Set();
                 sortedShifts.forEach(s => uniqueDatesWorked.add(s.date));
@@ -1572,6 +1594,8 @@
                 alert("您的瀏覽器不支援自動下載，請手動複製內容。");
             }
         }
+        
+        // PNG Export function removed as per user request
 
     </script>
 </body>
