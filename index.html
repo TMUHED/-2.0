@@ -687,87 +687,20 @@ document.getElementById('doctorMaxConsecutiveInput').value = (maxConsecutiveStor
             document.getElementById('doctorModal').style.display = 'block';
         }
 
-function closeDoctorModal() {
-    document.getElementById('doctorModal').style.display = 'none';
-    document.getElementById('miniCalendarContainer').innerHTML = ''; // 清空預休日期日曆
-    currentDoctorIdForDesignatedShifts = null;
-    currentEditingDoctorDesignatedShifts = []; // 清空暫存的指定班別
-
-    // 新增以下程式碼來清除 Modal 中的主要輸入欄位
-    document.getElementById('doctorIdInput').value = ''; // 清除正在編輯的醫師ID
-    document.getElementById('doctorNameInput').value = ''; // 清除姓名
-
-    // 清除總班數相關欄位
-    document.getElementById('doctorMinTotalShiftsInput').value = '';
-    document.getElementById('doctorMaxTotalShiftsInput').value = '';
-
-    // 清除連續班次相關欄位
-    document.getElementById('doctorMinConsecutiveInput').value = '';
-    document.getElementById('doctorMaxConsecutiveInput').value = '';
-
-    // 清除上月夜班 checkbox
-    document.getElementById('doctorPreviousMonthNightShiftInput').checked = false;
-
-    // 清除各班型上下限欄位，並移除可能由偏好設定造成的禁用狀態和暫存值
-    SHIFT_KEYS.forEach(sk => {
-        const minInput = document.getElementById(`doctorMin${sk}Input`);
-        if (minInput) {
-            minInput.value = '';
-            minInput.disabled = false; // 解除禁用
-            if (minInput.dataset.originalValue !== undefined) { // 清理 handlePreferenceChange 用的暫存值
-                delete minInput.dataset.originalValue;
-            }
+        function closeDoctorModal() {
+            document.getElementById('doctorModal').style.display = 'none';
+            document.getElementById('miniCalendarContainer').innerHTML = ''; 
+            currentDoctorIdForDesignatedShifts = null; 
+            currentEditingDoctorDesignatedShifts = [];
         }
-        const maxInput = document.getElementById(`doctorMax${sk}Input`);
-        if (maxInput) {
-            maxInput.value = '';
-            maxInput.disabled = false; // 解除禁用
-            if (maxInput.dataset.originalValue !== undefined) { // 清理 handlePreferenceChange 用的暫存值
-                delete maxInput.dataset.originalValue;
-            }
+         function closeUnassignedReasonModal() {
+            document.getElementById('unassignedReasonModal').style.display = 'none';
         }
-    });
-
-    // 清除假日/節慶班上下限欄位
-    const minWeekendInput = document.getElementById('doctorMinWeekendInput');
-    if (minWeekendInput) {
-        minWeekendInput.value = '';
-        if (minWeekendInput.dataset.originalValue !== undefined) {
-             delete minWeekendInput.dataset.originalValue;
+        function closeDesignatedShiftModal() {
+            document.getElementById('designatedShiftModal').style.display = 'none';
+            document.getElementById('designatedCalendarContainer').innerHTML = '';
+            closeShiftTypeSelector(); 
         }
-    }
-    const maxWeekendInput = document.getElementById('doctorMaxWeekendInput');
-    if (maxWeekendInput) {
-        maxWeekendInput.value = '';
-        if (maxWeekendInput.dataset.originalValue !== undefined) {
-            delete maxWeekendInput.dataset.originalValue;
-        }
-    }
-
-    // 清除並解除禁用班別偏好設定的 checkboxes
-    const prefCannotNights = document.getElementById('doctorCannotWorkNightsInput');
-    if (prefCannotNights) {
-        prefCannotNights.checked = false;
-        prefCannotNights.disabled = false;
-    }
-    const prefCannotSD = document.getElementById('doctorCannotWorkSDInput');
-    if (prefCannotSD) {
-        prefCannotSD.checked = false;
-        prefCannotSD.disabled = false;
-    }
-    const prefOnlySD = document.getElementById('doctorOnlySDInput');
-    if (prefOnlySD) {
-        prefOnlySD.checked = false;
-        prefOnlySD.disabled = false;
-    }
-
-    // 重置指定班別的摘要文字
-    const designatedSummaryP = document.getElementById('designatedShiftsSummary');
-    if (designatedSummaryP) {
-        designatedSummaryP.textContent = "無指定班別";
-    }
-    // currentEditingDoctorDaysOff 會在下次打開 Modal 時由 renderMiniCalendar 根據情況重新處理，此處不需特別清
-}
 
 
         window.onclick = function(event) { 
