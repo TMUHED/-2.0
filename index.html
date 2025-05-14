@@ -174,7 +174,7 @@
                 <button id="exportCsvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-md shadow">
                     匯出CSV (Excel)
                 </button>
-                </div>
+            </div>
 
 
             <div class="mb-6">
@@ -224,17 +224,13 @@
                     <label for="doctorMaxTotalShiftsInput" class="block text-sm font-medium text-gray-700">總班數上限:</label>
                     <input type="number" id="doctorMaxTotalShiftsInput" placeholder="無" min="0" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
                 </div>
-                <div>
-                    <label for="doctorMaxConsecutiveInput" class="block text-sm font-medium text-gray-700">最大連續上班:</label>
-                    <input type="number" id="doctorMaxConsecutiveInput" placeholder="無" min="0" class="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                </div>
                  <div>
                     <label class="flex items-center mt-3">
                         <input type="checkbox" id="doctorPreviousMonthNightShiftInput" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                         <span class="ml-2 text-sm text-gray-600">上個月最後一天為夜班</span>
                     </label>
                 </div>
-            </div>
+                </div>
             
             <p class="text-sm font-medium text-gray-700 mb-1 mt-4">各班型上下限 (留空表示無限制):</p>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 mb-3">
@@ -337,6 +333,8 @@
         };
         const SHIFT_KEYS = Object.keys(SHIFT_DEFINITIONS);
         const LOCAL_STORAGE_KEY = 'erSchedulerDoctorSettings_v4'; 
+        const IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS = 4; // Implicit hard max
+        const IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS = 2; // Soft target for continuity
         
         const TAIWAN_NATIONAL_HOLIDAYS = { 
             2025: [
@@ -378,7 +376,6 @@
             });
             document.getElementById('clearSavedSettingsBtn').addEventListener('click', clearSavedSettings);
             document.getElementById('exportCsvBtn').addEventListener('click', exportScheduleToCSV);
-            // Removed PNG export button event listener
 
             document.getElementById('doctorCannotWorkNightsInput').addEventListener('change', handlePreferenceChange);
             document.getElementById('doctorCannotWorkSDInput').addEventListener('change', handlePreferenceChange);
@@ -420,7 +417,7 @@
 
             const defaultConstraints = { 
                 minTotalShifts: null, maxTotalShifts: null, 
-                maxConsecutiveWorkDays: 3, 
+                maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Use global constant
                 minD: null, maxD: null, 
                 minN: null, maxN: null, 
                 minK: null, maxK: null, 
@@ -456,7 +453,7 @@
                     doctors = parsedSettings.map(docData => {
                         const baseConstraints = { 
                             minTotalShifts: null, maxTotalShifts: null, 
-                            maxConsecutiveWorkDays: 3, 
+                            maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, 
                             minD: null, maxD: null, minN: null, maxN: null, minK: null, maxK: null, 
                             minSD: null, maxSD: null, minSN: null, maxSN: null, 
                             minWeekendShifts: null, maxWeekendShifts: null
@@ -474,6 +471,11 @@
                             constraints.minShiftsPerType[sk] = docData.constraints?.minShiftsPerType?.[sk] !== undefined ? docData.constraints.minShiftsPerType[sk] : baseConstraints[`min${sk}`]; 
                             constraints.maxShiftsPerType[sk] = docData.constraints?.maxShiftsPerType?.[sk] !== undefined ? docData.constraints.maxShiftsPerType[sk] : baseConstraints[`max${sk}`];
                         });
+                        // Ensure maxConsecutiveWorkDays is using the global constant if loaded as null/999 from older versions
+                        if (constraints.maxConsecutiveWorkDays === null || constraints.maxConsecutiveWorkDays === 999) {
+                            constraints.maxConsecutiveWorkDays = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS;
+                        }
+
 
                          const basePreferences = { previousMonthNightShift: false, cannotWorkNights: false, cannotWorkShiftTypes: [], onlyWorksShiftTypes: [] };
                         const preferences = {
@@ -590,7 +592,7 @@
             
             document.getElementById('doctorMinTotalShiftsInput').value = ""; 
             document.getElementById('doctorMaxTotalShiftsInput').value = "";  
-            document.getElementById('doctorMaxConsecutiveInput').value = "3"; 
+            document.getElementById('doctorMaxConsecutiveInput').value = ""; // Default to blank, system uses IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS
             document.getElementById('doctorPreviousMonthNightShiftInput').checked = false;
             
             SHIFT_KEYS.forEach(sk => {
@@ -632,7 +634,8 @@
             
             document.getElementById('doctorMinTotalShiftsInput').value = doctor.constraints.minTotalShifts === null ? "" : doctor.constraints.minTotalShifts;
             document.getElementById('doctorMaxTotalShiftsInput').value = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? "" : doctor.constraints.maxTotalShifts;
-            document.getElementById('doctorMaxConsecutiveInput').value = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? "" : doctor.constraints.maxConsecutiveWorkDays;
+            // Max consecutive is now a global rule, so the input is removed. If it were to be re-added:
+            // document.getElementById('doctorMaxConsecutiveInput').value = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? "" : doctor.constraints.maxConsecutiveWorkDays;
             document.getElementById('doctorPreviousMonthNightShiftInput').checked = doctor.preferences.previousMonthNightShift;
             
             SHIFT_KEYS.forEach(st => {
@@ -740,7 +743,7 @@
                 constraints: {
                     minTotalShifts: minTotalShiftsValue,
                     maxTotalShifts: maxTotalShiftsValue, 
-                    maxConsecutiveWorkDays: parseInputAsIntOrNull(constraintsData.maxConsecutiveWorkDays, 999), 
+                    maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Use global constant
                     minShiftsPerType: finalMinShiftsPerType,
                     maxShiftsPerType: finalMaxShiftsPerType,
                     minWeekendShifts: parseInputAsIntOrNull(constraintsData.minWeekendShifts),
@@ -773,7 +776,7 @@
             const constraintsData = {
                 minTotalShifts: document.getElementById('doctorMinTotalShiftsInput').value,
                 maxTotalShifts: document.getElementById('doctorMaxTotalShiftsInput').value,
-                maxConsecutiveWorkDays: document.getElementById('doctorMaxConsecutiveInput').value,
+                maxConsecutiveWorkDays: IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS, // Not from input anymore
                 minWeekendShifts: document.getElementById('doctorMinWeekendInput').value,
                 maxWeekendShifts: document.getElementById('doctorMaxWeekendInput').value,
             };
@@ -838,7 +841,7 @@
                 const maxTotal = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? '無上限' : doctor.constraints.maxTotalShifts;
                 const minWeekend = doctor.constraints.minWeekendShifts === null ? '-' : doctor.constraints.minWeekendShifts;
                 const maxWeekend = doctor.constraints.maxWeekendShifts === 999 || doctor.constraints.maxWeekendShifts === null ? '無上限' : doctor.constraints.maxWeekendShifts;
-                const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '無' : doctor.constraints.maxConsecutiveWorkDays;
+                // const maxConsecutive = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '無' : doctor.constraints.maxConsecutiveWorkDays;
 
 
                 div.innerHTML = `
@@ -846,7 +849,6 @@
                         <strong class="text-md text-blue-600">${doctor.name}</strong>
                         <p class="text-xs text-gray-500">
                             總班: ${minTotal} - ${maxTotal}, 
-                            連上上限: ${maxConsecutive}, 
                             假日/節慶: ${minWeekend} - ${maxWeekend} <br/>
                             偏好: ${preferencesText.join(', ') || '無'}
                             休假: ${daysOffDisplay}
@@ -1036,44 +1038,56 @@
 
 
                         potentialCandidates.sort((a, b) => {
-                            if (a.currentShifts !== b.currentShifts) return a.currentShifts - b.currentShifts;
+                            // 1. Primary: Total shifts (fewer is better)
+                            if (a.currentShifts !== b.currentShifts) {
+                                return a.currentShifts - b.currentShifts;
+                            }
+                            // 2. Secondary: Total Night Shifts (N+SN) (fewer is better)
                             const totalNightA = (a.currentShiftsPerType['N'] || 0) + (a.currentShiftsPerType['SN'] || 0);
                             const totalNightB = (b.currentShiftsPerType['N'] || 0) + (b.currentShiftsPerType['SN'] || 0);
-                            if (totalNightA !== totalNightB) return totalNightA - totalNightB;
+                            if (totalNightA !== totalNightB) {
+                                return totalNightA - totalNightB;
+                            }
                             
+                            // 3. Tertiary: Continuity Preference (Implicit Min 2, Max 4)
                             const prevCalDayObj = new Date(year, month - 1, day - 1);
-                            if (day > 1 && prevCalDayObj.getMonth() === month -1) {
-                                const aWorkedYesterday = getPreviousShiftTypeOnDate(a, prevCalDayObj) !== null;
-                                const bWorkedYesterday = getPreviousShiftTypeOnDate(b, prevCalDayObj) !== null;
-                                if (aWorkedYesterday && !bWorkedYesterday && (a.constraints.maxConsecutiveWorkDays === null || a.constraints.maxConsecutiveWorkDays === 999 || a.currentConsecutiveWorkDays < a.constraints.maxConsecutiveWorkDays) ) return -1; 
-                                if (!aWorkedYesterday && bWorkedYesterday && (b.constraints.maxConsecutiveWorkDays === null || b.constraints.maxConsecutiveWorkDays === 999 || b.currentConsecutiveWorkDays < b.constraints.maxConsecutiveWorkDays) ) return 1;  
-                            }
-                            if (isWeekendOrHoliday(currentDateStr, year, month, day)) {
-                                if (a.currentWeekendShifts !== b.currentWeekendShifts) return a.currentWeekendShifts - b.currentWeekendShifts;
-                            }
-                            if (shiftKey === 'SD' || shiftKey === 'SN') {
-                                if (day > 1 && prevCalDayObj.getMonth() === month -1) { 
-                                    const aWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(a, prevCalDayObj, shiftKey) === shiftKey;
-                                    const bWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(b, prevCalDayObj, shiftKey) === shiftKey;
-                                    if (aWorkedSameShiftYesterday && !bWorkedSameShiftYesterday) return -1;
-                                    if (!aWorkedSameShiftYesterday && bWorkedSameShiftYesterday) return 1;
-                                }
-                            }
+                            let continuityScoreA = 0;
+                            let continuityScoreB = 0;
+
                             if (day > 1 && prevCalDayObj.getMonth() === month -1) {
                                 const prevShiftA = getPreviousShiftTypeOnDate(a, prevCalDayObj);
                                 const prevShiftB = getPreviousShiftTypeOnDate(b, prevCalDayObj);
-                                if (prevShiftA === 'D' && prevShiftB !== 'D') { 
-                                    if (shiftKey === 'D') return -1; 
-                                    else if (shiftKey === 'SD' && !b.preferences.cannotWorkShiftTypes.includes('D')) return -1; 
-                                    else if (shiftKey === 'K' && !b.preferences.cannotWorkShiftTypes.includes('D') && !b.preferences.cannotWorkShiftTypes.includes('SD')) return -1;
+                                const aWorkedYesterday = prevShiftA !== null;
+                                const bWorkedYesterday = prevShiftB !== null;
+
+                                if (aWorkedYesterday && a.currentConsecutiveWorkDays < IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
+                                    continuityScoreA = (a.currentConsecutiveWorkDays >= IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS -1) ? 2 : 1; // Higher score if already met min or close
+                                    if (prevShiftA === shiftKey) continuityScoreA += 2; // Bonus for same shift type
+                                    if (prevShiftA === 'D' && (shiftKey === 'D' || shiftKey === 'SD' || shiftKey === 'K')) continuityScoreA +=1; // D -> D/SD/K bonus
                                 }
-                                if (prevShiftB === 'D' && prevShiftA !== 'D') {
-                                     if (shiftKey === 'D') return 1; 
-                                     else if (shiftKey === 'SD' && !a.preferences.cannotWorkShiftTypes.includes('D')) return 1;
-                                     else if (shiftKey === 'K' && !a.preferences.cannotWorkShiftTypes.includes('D') && !a.preferences.cannotWorkShiftTypes.includes('SD')) return 1;
+                                if (bWorkedYesterday && b.currentConsecutiveWorkDays < IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
+                                    continuityScoreB = (b.currentConsecutiveWorkDays >= IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS -1) ? 2 : 1;
+                                    if (prevShiftB === shiftKey) continuityScoreB += 2;
+                                     if (prevShiftB === 'D' && (shiftKey === 'D' || shiftKey === 'SD' || shiftKey === 'K')) continuityScoreB +=1;
                                 }
                             }
-
+                            if (continuityScoreA !== continuityScoreB) {
+                                return continuityScoreB - continuityScoreA; // Higher score is better (comes first)
+                            }
+                            
+                            // 4. Quaternary: Weekend/Holiday shifts if applicable for this shift
+                            if (isWeekendOrHoliday(currentDateStr, year, month, day)) {
+                                if (a.currentWeekendShifts !== b.currentWeekendShifts) {
+                                    return a.currentWeekendShifts - b.currentWeekendShifts;
+                                }
+                            }
+                            // 5. Quinary: Continuity for SD/SN (if not covered by general continuity)
+                            if ((shiftKey === 'SD' || shiftKey === 'SN') && (day > 1 && prevCalDayObj.getMonth() === month -1)) {
+                                const aWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(a, prevCalDayObj, shiftKey) === shiftKey;
+                                const bWorkedSameShiftYesterday = getPreviousShiftTypeOnDate(b, prevCalDayObj, shiftKey) === shiftKey;
+                                if (aWorkedSameShiftYesterday && !bWorkedSameShiftYesterday) return -1;
+                                if (!aWorkedSameShiftYesterday && bWorkedSameShiftYesterday) return 1;
+                            }
                             return Math.random() - 0.5; 
                         });
 
@@ -1147,9 +1161,9 @@
                     reason = `假日班上限 (${doctor.constraints.maxWeekendShifts})`; return { canWork: false, reason: reason };
                  }
             }
-
-            if (doctor.constraints.maxConsecutiveWorkDays !== null && doctor.constraints.maxConsecutiveWorkDays !== 999 && doctor.currentConsecutiveWorkDays >= doctor.constraints.maxConsecutiveWorkDays) {
-                reason = `連續上班達上限 (${doctor.constraints.maxConsecutiveWorkDays}天)`; return { canWork: false, reason: reason };
+            // Use IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS for the check
+            if (doctor.currentConsecutiveWorkDays >= IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS) {
+                reason = `連續上班達上限 (${IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS}天)`; return { canWork: false, reason: reason };
             }
             
             if (shiftInfo.isNight) { 
@@ -1332,14 +1346,12 @@
             const newDoctor = doctors.find(d => d.id === newDoctorId);
             const oldDoctor = doctors.find(d => d.id === oldDoctorId);
 
-            // Create a temporary copy of the new doctor to simulate the change for validation
             let tempNewDoctor = JSON.parse(JSON.stringify(newDoctor));
             tempNewDoctor.currentShifts = newDoctor.currentShifts; 
             tempNewDoctor.currentShiftsPerType = {...newDoctor.currentShiftsPerType};
             tempNewDoctor.currentWeekendShifts = newDoctor.currentWeekendShifts;
             tempNewDoctor.currentConsecutiveWorkDays = newDoctor.currentConsecutiveWorkDays;
             tempNewDoctor.assignedShiftsDetails = [...newDoctor.assignedShiftsDetails];
-
 
             if (oldDoctor) {
                 tempNewDoctor.currentShifts = newDoctor.currentShifts; 
@@ -1461,7 +1473,7 @@
             docs.forEach(doctor => {
                 const minTotal = doctor.constraints.minTotalShifts === null ? '-' : doctor.constraints.minTotalShifts;
                 const maxTotal = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? '無' : doctor.constraints.maxTotalShifts;
-                const maxConsecutiveDisplay = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === null ? '-' : doctor.constraints.maxConsecutiveWorkDays;
+                const maxConsecutiveDisplay = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS; // Display global rule
                 table += `<tr>
                             <td class="py-2 px-4 whitespace-nowrap text-sm font-medium text-gray-900">${doctor.name}</td>
                             <td class="py-2 px-4 whitespace-nowrap text-sm text-gray-700 text-center">${doctor.currentShifts} (${minTotal}/${maxTotal})</td>`;
@@ -1559,7 +1571,7 @@
                 const minTotal = doc.constraints.minTotalShifts === null ? '-' : doc.constraints.minTotalShifts;
                 const maxTotal = doc.constraints.maxTotalShifts === 999 || doc.constraints.maxTotalShifts === null ? '無' : doc.constraints.maxTotalShifts;
                 const totalNightShifts = (doc.currentShiftsPerType['N'] || 0) + (doc.currentShiftsPerType['SN'] || 0);
-                const maxConsecutive = doc.constraints.maxConsecutiveWorkDays === 999 || doc.constraints.maxConsecutiveWorkDays === null ? '-' : doc.constraints.maxConsecutiveWorkDays;
+                const maxConsecutiveDisplay = IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS; // Display global rule
 
                 let row = [
                     escapeCSV(doc.name),
@@ -1575,7 +1587,7 @@
                 const maxWeekend = doc.constraints.maxWeekendShifts === 999 || doc.constraints.maxWeekendShifts === null ? '無' : doc.constraints.maxWeekendShifts;
 
                 row.push(formatCSVTextCell(`${doc.currentWeekendShifts} (${minWeekend}/${maxWeekend})`));
-                row.push(formatCSVTextCell(`${doc.summaryMaxConsecutive || 0} / ${maxConsecutive}`)); 
+                row.push(formatCSVTextCell(`${doc.summaryMaxConsecutive || 0} / ${maxConsecutiveDisplay}`)); 
                 csvContent.push(row.join(','));
             });
 
@@ -1595,8 +1607,6 @@
             }
         }
         
-        // PNG Export function removed as per user request
-
     </script>
 </body>
 </html>
