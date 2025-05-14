@@ -645,8 +645,10 @@
             document.getElementById('doctorIdInput').value = doctor.id;
             document.getElementById('doctorNameInput').value = doctor.name;
             
-            document.getElementById('doctorMinTotalShiftsInput').value = doctor.constraints.minTotalShifts === null ? "" : doctor.constraints.minTotalShifts;
-            document.getElementById('doctorMaxTotalShiftsInput').value = doctor.constraints.maxTotalShifts === 999 || doctor.constraints.maxTotalShifts === null ? "" : doctor.constraints.maxTotalShifts;
+            const minConsecutiveStoredValue = doctor.constraints.minConsecutiveWorkDays;
+document.getElementById('doctorMinConsecutiveInput').value = (minConsecutiveStoredValue === null) ? "" : minConsecutiveStoredValue;
+            const maxConsecutiveStoredValue = doctor.constraints.maxConsecutiveWorkDays;
+document.getElementById('doctorMaxConsecutiveInput').value = (maxConsecutiveStoredValue === null || maxConsecutiveStoredValue === 999) ? "" : maxConsecutiveStoredValue;
             document.getElementById('doctorMinConsecutiveInput').value = doctor.constraints.minConsecutiveWorkDays === null || doctor.constraints.minConsecutiveWorkDays === IMPLICIT_MIN_CONSECUTIVE_WORK_DAYS_DEFAULT ? "" : doctor.constraints.minConsecutiveWorkDays;
             document.getElementById('doctorMaxConsecutiveInput').value = doctor.constraints.maxConsecutiveWorkDays === 999 || doctor.constraints.maxConsecutiveWorkDays === IMPLICIT_MAX_CONSECUTIVE_WORK_DAYS_DEFAULT || doctor.constraints.maxConsecutiveWorkDays === null ? "" : doctor.constraints.maxConsecutiveWorkDays;
             document.getElementById('doctorPreviousMonthNightShiftInput').checked = doctor.preferences.previousMonthNightShift;
